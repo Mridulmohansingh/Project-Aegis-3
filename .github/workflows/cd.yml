@@ -1,0 +1,83 @@
+name: CD
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v2
+      with:
+        role-to-assume: arn:aws:iam::123456789012:role/github-actions-role
+        aws-region: us-east-1
+
+    - name: Login to Amazon ECR
+      id: login-ecr
+      uses: aws-actions/amazon-ecr-login@v1
+
+    - name: Build and push release image (Question Bank)
+      env:
+        ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+        ECR_REPOSITORY: aegis/question-bank
+        IMAGE_TAG: ${{ github.ref_name }}
+      run: |
+        docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG -f build/package/question-bank/Dockerfile .
+        docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+        docker tag $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG $ECR_REGISTRY/$ECR_REPOSITORY:latest
+        docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
+
+    - name: Build and push release image (Exam Delivery)
+      env:
+        ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+        ECR_REPOSITORY: aegis/exam-delivery
+        IMAGE_TAG: ${{ github.ref_name }}
+      run: |
+        docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG -f build/package/exam-delivery/Dockerfile .
+        docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+        docker tag $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG $ECR_REGISTRY/$ECR_REPOSITORY:latest
+        docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
+
+    - name: Update kubeconfig
+      run: aws eks update-kubeconfig --name aegis-prod-cluster --region us-east-1
+
+    - name: Deploy Question Bank
+      env:
+        ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+        ECR_REPOSITORY: aegis/question-bank
+        IMAGE_TAG: ${{ github.ref_name }}
+      run: |
+        kubectl set image deployment/question-bank question-bank=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG -n aegis
+        kubectl rollout status deployment/question-bank -n aegis --timeout=300s
+
+    - name: Deploy Exam Delivery
+      env:
+        ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+        ECR_REPOSITORY: aegis/exam-delivery
+        IMAGE_TAG: ${{ github.ref_name }}
+      run: |
+        kubectl set image deployment/exam-delivery exam-delivery=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG -n aegis
+        kubectl rollout status deployment/exam-delivery -n aegis --timeout=300s
+
+    - name: Smoke Test
+      run: |
+        echo "Running basic health checks on the ingress endpoints"
+        curl -f -k https://api.aegis-platform.com/api/v1/items/health || exit 1
+        curl -f -k https://api.aegis-platform.com/api/v1/sessions/health || exit 1
+
+    - name: Rollback on failure
+      if: failure()
+      run: |
+        echo "Deployment failed, initiating rollback"
+        kubectl rollout undo deployment/question-bank -n aegis
+        kubectl rollout undo deployment/exam-delivery -n aegis
+        kubectl rollout status deployment/question-bank -n aegis --timeout=300s
+        kubectl rollout status deployment/exam-delivery -n aegis --timeout=300s
