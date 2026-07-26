@@ -2,6 +2,7 @@ package irt_test
 
 import (
 	"math"
+	"math/rand"
 	"testing"
 
 	"github.com/aegis-platform/aegis/internal/irt"
@@ -21,9 +22,10 @@ func generateTestItems(n int) []irt.ItemParams {
 func generateResponses(items []irt.ItemParams, theta float64) []int {
 	model := irt.Model3PL{}
 	responses := make([]int, len(items))
+	rng := rand.New(rand.NewSource(13))
 	for i, item := range items {
 		p := model.Probability(item, theta)
-		if p > 0.5 { // simplified deterministic response for testing
+		if rng.Float64() < p {
 			responses[i] = 1
 		} else {
 			responses[i] = 0

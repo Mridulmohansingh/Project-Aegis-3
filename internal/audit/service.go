@@ -151,7 +151,9 @@ func (s *Service) VerifyChain(ctx context.Context, startID, endID int64) (*Integ
 		}
 
 		entryCopy := *entry
+		entryCopy.ID = 0
 		entryCopy.EntryHash = nil
+		entryCopy.CheckpointSig = nil
 		data, err := json.Marshal(&entryCopy)
 		if err != nil {
 			return nil, err

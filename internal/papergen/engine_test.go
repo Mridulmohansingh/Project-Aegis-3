@@ -19,11 +19,19 @@ type mockItemRepo struct {
 }
 
 func (m *mockItemRepo) Create(ctx context.Context, item *item.Item) error { return nil }
-func (m *mockItemRepo) GetByID(ctx context.Context, orgID, id uuid.UUID) (*item.Item, error) { return nil, nil }
-func (m *mockItemRepo) GetByExternalID(ctx context.Context, orgID uuid.UUID, externalID string) (*item.Item, error) { return nil, nil }
+func (m *mockItemRepo) GetByID(ctx context.Context, orgID, id uuid.UUID) (*item.Item, error) {
+	return nil, nil
+}
+func (m *mockItemRepo) GetByExternalID(ctx context.Context, orgID uuid.UUID, externalID string) (*item.Item, error) {
+	return nil, nil
+}
 func (m *mockItemRepo) Update(ctx context.Context, item *item.Item) error { return nil }
-func (m *mockItemRepo) SoftDelete(ctx context.Context, orgID, id uuid.UUID, deletedBy uuid.UUID) error { return nil }
-func (m *mockItemRepo) List(ctx context.Context, filter item.ItemFilter, cursor string, limit int) ([]*item.Item, string, error) { return nil, "", nil }
+func (m *mockItemRepo) SoftDelete(ctx context.Context, orgID, id uuid.UUID, deletedBy uuid.UUID) error {
+	return nil
+}
+func (m *mockItemRepo) List(ctx context.Context, filter item.ItemFilter, cursor string, limit int) ([]*item.Item, string, error) {
+	return nil, "", nil
+}
 func (m *mockItemRepo) GetEligibleForPaperGeneration(ctx context.Context, orgID, subjectID uuid.UUID, maxExposureIndex float64) ([]*item.Item, error) {
 	return m.items, nil
 }
@@ -36,8 +44,12 @@ func (m *mockItemRepo) GetEnemies(ctx context.Context, itemID uuid.UUID) ([]item
 	}
 	return res, nil
 }
-func (m *mockItemRepo) CreateVersion(ctx context.Context, version *item.ItemVersion) error { return nil }
-func (m *mockItemRepo) GetVersionHistory(ctx context.Context, itemID uuid.UUID) ([]item.ItemVersion, error) { return nil, nil }
+func (m *mockItemRepo) CreateVersion(ctx context.Context, version *item.ItemVersion) error {
+	return nil
+}
+func (m *mockItemRepo) GetVersionHistory(ctx context.Context, itemID uuid.UUID) ([]item.ItemVersion, error) {
+	return nil, nil
+}
 
 type mockPaperRepo struct{}
 
@@ -156,6 +168,7 @@ func TestSolveFeasible(t *testing.T) {
 	}
 
 	p := res.Papers[0]
+	t.Logf("Paper Profile: %+v", p.Profile)
 	if len(p.EncryptedItemIDs) == 0 {
 		t.Errorf("Expected encrypted item IDs")
 	}

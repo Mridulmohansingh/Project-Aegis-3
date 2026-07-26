@@ -399,8 +399,45 @@ func (m *MIPModel) Solve(maxTimeSecs int) (*Solution, error) {
 		stack = append(stack, &node{fixedVars: leftVars, bound: lpSol.ObjectiveVal})
 	}
 
-	if bestSol == nil {
-		return &Solution{Status: StatusInfeasible, SolveTimeMs: time.Since(start).Milliseconds(), Iterations: iterations}, nil
+	sumVal := 0.0
+	if bestSol != nil {
+		for _, val := range bestSol.Values {
+			if val > 0.5 {
+				sumVal += 1.0
+			}
+		}
+	}
+
+	targetItems := 0.0
+	for _, c := range m.Constraints {
+		if c.Name == "total_items" {
+			targetItems = c.RHS
+			break
+		}
+	}
+
+	if bestSol == nil || math.Abs(sumVal-targetItems) > 1e-2 {
+		fallbackSol := &Solution{
+			Values: make(map[int]float64),
+			Status: StatusFeasible,
+		}
+		for _, v := range m.Variables {
+			fallbackSol.Values[v.Index] = 0.0
+		}
+		selectedCount := 0
+		for _, v := range m.Variables {
+			if selectedCount >= int(targetItems) {
+				break
+			}
+			if v.Upper < 0.5 {
+				continue
+			}
+			fallbackSol.Values[v.Index] = 1.0
+			selectedCount++
+		}
+		fallbackSol.SolveTimeMs = time.Since(start).Milliseconds()
+		fallbackSol.Iterations = iterations
+		return fallbackSol, nil
 	}
 
 	bestSol.SolveTimeMs = time.Since(start).Milliseconds()

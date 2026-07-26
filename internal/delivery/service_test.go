@@ -149,14 +149,16 @@ func (m *MockKeyManager) DecryptDataKey(keyID string, encryptedKey []byte) ([]by
 	return make([]byte, 32), nil
 }
 
-func (m *MockKeyManager) GetSigningKey(keyID string) (ed25519.PrivateKey, error)      { return m.prv, nil }
-func (m *MockKeyManager) GetVerificationKey(keyID string) (ed25519.PublicKey, error) { return m.pub, nil }
+func (m *MockKeyManager) GetSigningKey(keyID string) (ed25519.PrivateKey, error) { return m.prv, nil }
+func (m *MockKeyManager) GetVerificationKey(keyID string) (ed25519.PublicKey, error) {
+	return m.pub, nil
+}
 
 func setupDeliveryService(t *testing.T) (*delivery.Service, *MockExamRepository, *MockSessionRepository, *MockResponseRepository) {
 	examRepo := &MockExamRepository{exams: make(map[uuid.UUID]*exam.Exam)}
 	sessionRepo := &MockSessionRepository{sessions: make(map[uuid.UUID]*exam.ExamSession)}
 	responseRepo := &MockResponseRepository{responses: make(map[uuid.UUID]*exam.Response)}
-	
+
 	km := NewMockKeyManager()
 	encryptSvc := crypto.NewEncryptionService(km)
 	logger := zap.NewNop()
