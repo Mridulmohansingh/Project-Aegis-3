@@ -76,8 +76,22 @@ resource "aws_db_instance" "rds" {
   final_snapshot_identifier = "aegis-${var.environment}-db-final-snapshot"
 }
 
-variable "db_name" { type = string }
-variable "environment" { type = string }
-variable "vpc_id" { type = string }
-variable "private_subnet_ids" { type = list(string) }
-variable "eks_security_group_id" { type = string }
+variable "db_name" {
+  type = string
+}
+
+variable "environment" {
+  type = string
+}
+
+variable "vpc_id" {
+  type = string
+}
+
+variable "private_subnet_ids" {
+  type = list(string)
+}
+
+variable "eks_security_group_id" {
+  type = string
+}

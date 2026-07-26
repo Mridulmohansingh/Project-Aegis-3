@@ -154,8 +154,22 @@ output "private_subnet_ids" {
   value = aws_subnet.private[*].id
 }
 
-variable "vpc_cidr" { type = string }
-variable "environment" { type = string }
-variable "public_subnets_cidr" { type = list(string) }
-variable "private_subnets_cidr" { type = list(string) }
-variable "availability_zones" { type = list(string) }
+variable "vpc_cidr" {
+  type = string
+}
+
+variable "environment" {
+  type = string
+}
+
+variable "public_subnets_cidr" {
+  type = list(string)
+}
+
+variable "private_subnets_cidr" {
+  type = list(string)
+}
+
+variable "availability_zones" {
+  type = list(string)
+}
