@@ -21,13 +21,13 @@ This is **not** a toy exam app. It implements:
 
 ## Current Status
 
-🚧 **Early development** — Architecture defined, core engines implemented, no deployment yet.
+🚀 **Fully Functional Reference Architecture** — All core engines, backend services, database migrations, security policies, deployments config, and frontend components are fully implemented.
 
 | Component | Status |
 |---|---|
 | Architecture Blueprint | ✅ Complete |
-| Domain Models (Item, Blueprint, Paper) | ✅ Complete |
-| Database Migrations (8 migrations) | ✅ Complete |
+| Domain Models (Item, Blueprint, Paper, Exam) | ✅ Complete |
+| Database Migrations (8 migrations with RLS & Partitions) | ✅ Complete |
 | IRT Scoring Engine (3PL, MLE, EAP) | ✅ Complete |
 | Paper Generation Engine (MIP Solver) | ✅ Complete |
 | DIF Detection (Mantel-Haenszel) | ✅ Complete |
@@ -36,12 +36,14 @@ This is **not** a toy exam app. It implements:
 | Audit Service (Merkle chain) | ✅ Complete |
 | Cryptography Service (AES-256-GCM, Ed25519) | ✅ Complete |
 | HTTP Middleware Stack | ✅ Complete |
-| Question Bank API Handlers | ✅ Complete |
+| Question Bank & Exam Handlers | ✅ Complete |
 | PostgreSQL Repository Layer | ✅ Complete |
-| Exam Delivery Service | 🔲 Planned |
-| React Frontend | 🔲 Planned |
-| Docker Compose (local dev) | 🔲 Planned |
-| Kubernetes / Terraform | 🔲 Planned |
+| Exam Delivery Service | ✅ Complete |
+| React Frontend | ✅ Complete |
+| Docker Compose (local dev infrastructure) | ✅ Complete |
+| Kubernetes Manifests & Terraform Modules | ✅ Complete |
+| CSV Exporter Engine | ✅ Complete |
+| CI/CD Pipelines | ✅ Complete |
 
 ## Architecture Overview
 
@@ -120,7 +122,7 @@ Every exam administration improves the question bank:
 | Search | OpenSearch |
 | Crypto | AES-256-GCM, Ed25519, SHA-256 |
 | Auth | Keycloak + FIDO2 + OPA |
-| Frontend | React + TypeScript (planned) |
+| Frontend | React + TypeScript + Vite |
 | Infrastructure | Docker, Kubernetes, Terraform |
 | Observability | Prometheus, Grafana, Loki, Jaeger |
 
@@ -129,43 +131,40 @@ Every exam administration improves the question bank:
 ```
 project-aegis/
 ├── cmd/                        # Service entry points
-│   └── question-bank/          # Question Bank Service
+│   ├── question-bank/          # Question Bank Service
+│   └── aegis-simulator/        # Standalone Psychometric simulator
 ├── internal/
-│   ├── api/handler/            # HTTP handlers (REST)
+│   ├── api/handler/            # HTTP handlers (REST, Export)
 │   ├── audit/                  # Merkle chain audit service
+│   ├── cache/                  # Redis cache & Rate-limiting lock service
 │   ├── domain/
 │   │   ├── item/               # Item aggregate (question bank)
 │   │   ├── blueprint/          # Test assembly blueprints
-│   │   └── paper/              # Generated test forms
+│   │   ├── paper/              # Generated test forms
+│   │   └── exam/               # Exams, Sessions, & Responses
+│   ├── events/                 # Kafka event publishing module
+│   ├── export/                 # CSV exporters for Excel/R/Tableau/Power BI
 │   ├── infrastructure/
-│   │   └── postgres/           # PostgreSQL repositories
-│   ├── irt/                    # IRT scoring engine
-│   │   ├── model.go            # 3PL model
-│   │   ├── estimation.go       # MLE + EAP estimators
-│   │   ├── equating.go         # True-score equating
-│   │   ├── dif.go              # DIF detection
-│   │   ├── person_fit.go       # Person-fit statistics
-│   │   └── scoring.go          # Scoring orchestrator
+│   │   └── postgres/           # PostgreSQL pool & repositories
+│   ├── irt/                    # IRT scoring engine (Estimation, Equating, DIF, Person-fit)
 │   └── papergen/               # Paper generation MIP solver
-│       ├── engine.go           # Branch-and-bound solver
-│       └── constraints.go      # Blueprint → MIP constraints
 ├── migrations/                 # PostgreSQL migrations (001-008)
-├── pkg/
-│   ├── apperrors/              # Structured errors + RFC 7807
-│   ├── config/                 # Configuration management
-│   ├── crypto/                 # AES-256-GCM + Ed25519 + SHA-256
-│   ├── httputil/               # HTTP response helpers
-│   ├── logging/                # Structured logging (zap)
-│   ├── middleware/             # HTTP middleware stack
-│   └── pagination/             # Cursor-based pagination
+├── pkg/                        # Core shared packages (crypto, apperrors, middleware, logging)
+├── deployments/                # Docker compose configs & Kubernetes manifests
+├── terraform/                  # Infrastructure as Code modules (EKS, RDS, VPC)
+├── policies/                   # OPA ABAC policies
+├── docs/                       # Technical & onboarding documentation
+├── frontend/                   # React + TypeScript + Vite dashboard client
 ├── Makefile
 ├── go.mod
+├── go.sum
+├── LICENSE
 └── README.md
 ```
 
 ## Getting Started (Local Development)
 
-> ⚠️ **Prerequisites**: Go 1.22+, PostgreSQL 15+, Docker (optional)
+Please refer to the detailed developer guides inside `/docs/development` for complete environment configuration and local setup instructions.
 
 ```bash
 # Clone
@@ -175,22 +174,19 @@ cd project-aegis
 # Install dependencies
 go mod tidy
 
-# Run database migrations (requires PostgreSQL)
-make migrate-up
-
 # Build all services
 make build
 
-# Run tests
-make test
+# Run unit tests
+go test ./...
 
-# Start Question Bank Service
-./bin/question-bank --config=config.yaml
+# Run the psychometric pipeline simulation
+go run cmd/aegis-simulator/main.go
 ```
 
 ## License
 
-Private — All rights reserved.
+MIT License (see [LICENSE](LICENSE) for details).
 
 ## Author
 
