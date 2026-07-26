@@ -25,18 +25,18 @@ const (
 type Entry struct {
 	ID             int64
 	EventTime      time.Time
-	EventType      string    // e.g., "ITEM_CREATED", "PAPER_GENERATED", "EXAM_STARTED"
+	EventType      string // e.g., "ITEM_CREATED", "PAPER_GENERATED", "EXAM_STARTED"
 	ActorID        uuid.UUID
 	ActorType      ActorType // USER, SYSTEM, SERVICE
 	ActorIP        string
-	ResourceType   string    // e.g., "item", "paper", "exam", "response"
+	ResourceType   string // e.g., "item", "paper", "exam", "response"
 	ResourceID     uuid.UUID
 	OrganizationID uuid.UUID
-	Action         string    // e.g., "CREATE", "UPDATE", "DELETE", "TRANSITION"
+	Action         string // e.g., "CREATE", "UPDATE", "DELETE", "TRANSITION"
 	Detail         map[string]interface{}
-	PreviousHash   []byte    // Hash of previous entry
-	EntryHash      []byte    // SHA-256(PreviousHash || serialized entry data)
-	CheckpointSig  []byte    // Ed25519 signature (only on checkpoint entries)
+	PreviousHash   []byte // Hash of previous entry
+	EntryHash      []byte // SHA-256(PreviousHash || serialized entry data)
+	CheckpointSig  []byte // Ed25519 signature (only on checkpoint entries)
 }
 
 // IntegrityReport holds the result of a chain verification
@@ -129,14 +129,14 @@ func (s *Service) VerifyChain(ctx context.Context, startID, endID int64) (*Integ
 	if err != nil {
 		return nil, err
 	}
-	
+
 	if len(entries) == 0 {
 		return &IntegrityReport{Verified: true}, nil
 	}
 
 	for i := 0; i < len(entries); i++ {
 		entry := entries[i]
-		
+
 		if i > 0 {
 			if string(entry.PreviousHash) != string(entries[i-1].EntryHash) {
 				id := entry.ID

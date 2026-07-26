@@ -47,17 +47,17 @@ func NewExamHandler(service ExamService, logger *zap.Logger) *ExamHandler {
 
 // CreateExamRequest is the request body for creating a new exam.
 type CreateExamRequest struct {
-	ExamCode        string         `json:"exam_code" validate:"required,max=50"`
-	ExamName        string         `json:"exam_name" validate:"required,max=200"`
-	ExamType        string         `json:"exam_type" validate:"required"`
-	TotalMarks      int            `json:"total_marks" validate:"required,min=1"`
-	TotalQuestions  int            `json:"total_questions" validate:"required,min=1"`
-	DurationMinutes int            `json:"duration_minutes" validate:"required,min=1"`
-	NegativeMarking bool           `json:"negative_marking"`
-	Sections        []SectionDTO   `json:"sections"`
-	BlueprintID     string         `json:"blueprint_id" validate:"required,uuid"`
-	Scheduling      SchedulingDTO  `json:"scheduling"`
-	Config          ExamConfigDTO  `json:"config"`
+	ExamCode        string        `json:"exam_code" validate:"required,max=50"`
+	ExamName        string        `json:"exam_name" validate:"required,max=200"`
+	ExamType        string        `json:"exam_type" validate:"required"`
+	TotalMarks      int           `json:"total_marks" validate:"required,min=1"`
+	TotalQuestions  int           `json:"total_questions" validate:"required,min=1"`
+	DurationMinutes int           `json:"duration_minutes" validate:"required,min=1"`
+	NegativeMarking bool          `json:"negative_marking"`
+	Sections        []SectionDTO  `json:"sections"`
+	BlueprintID     string        `json:"blueprint_id" validate:"required,uuid"`
+	Scheduling      SchedulingDTO `json:"scheduling"`
+	Config          ExamConfigDTO `json:"config"`
 }
 
 // UpdateExamRequest is the request body for updating an exam.

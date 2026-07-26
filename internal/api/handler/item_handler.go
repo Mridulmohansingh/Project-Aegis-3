@@ -59,76 +59,76 @@ func NewItemHandler(service ItemService, logger *zap.Logger) *ItemHandler {
 
 // CreateItemRequest is the request body for creating a new item.
 type CreateItemRequest struct {
-	ExternalID      string              `json:"external_id" validate:"required,max=50"`
-	ItemType        string              `json:"item_type" validate:"required"`
-	SubjectID       string              `json:"subject_id" validate:"required,uuid"`
-	ChapterID       string              `json:"chapter_id" validate:"required,uuid"`
-	TopicID         string              `json:"topic_id" validate:"required,uuid"`
-	SubTopicID      *string             `json:"sub_topic_id,omitempty" validate:"omitempty,uuid"`
-	LearningOutcomeID *string           `json:"learning_outcome_id,omitempty" validate:"omitempty,uuid"`
-	Content         item.ItemContent    `json:"content" validate:"required"`
-	MarkingScheme   item.MarkingScheme  `json:"marking_scheme" validate:"required"`
-	DifficultyLevel *string             `json:"difficulty_level,omitempty"`
-	CognitiveLevel  *string             `json:"cognitive_level,omitempty"`
-	EstimatedTimeSecs *int              `json:"estimated_time_secs,omitempty"`
-	PrimaryLanguage *string             `json:"primary_language,omitempty"`
-	Tags            []string            `json:"tags,omitempty"`
+	ExternalID        string             `json:"external_id" validate:"required,max=50"`
+	ItemType          string             `json:"item_type" validate:"required"`
+	SubjectID         string             `json:"subject_id" validate:"required,uuid"`
+	ChapterID         string             `json:"chapter_id" validate:"required,uuid"`
+	TopicID           string             `json:"topic_id" validate:"required,uuid"`
+	SubTopicID        *string            `json:"sub_topic_id,omitempty" validate:"omitempty,uuid"`
+	LearningOutcomeID *string            `json:"learning_outcome_id,omitempty" validate:"omitempty,uuid"`
+	Content           item.ItemContent   `json:"content" validate:"required"`
+	MarkingScheme     item.MarkingScheme `json:"marking_scheme" validate:"required"`
+	DifficultyLevel   *string            `json:"difficulty_level,omitempty"`
+	CognitiveLevel    *string            `json:"cognitive_level,omitempty"`
+	EstimatedTimeSecs *int               `json:"estimated_time_secs,omitempty"`
+	PrimaryLanguage   *string            `json:"primary_language,omitempty"`
+	Tags              []string           `json:"tags,omitempty"`
 }
 
 // UpdateItemRequest is the request body for updating an item.
 type UpdateItemRequest struct {
-	Content         *item.ItemContent   `json:"content,omitempty"`
-	MarkingScheme   *item.MarkingScheme `json:"marking_scheme,omitempty"`
-	DifficultyLevel *string             `json:"difficulty_level,omitempty"`
-	CognitiveLevel  *string             `json:"cognitive_level,omitempty"`
-	EstimatedTimeSecs *int              `json:"estimated_time_secs,omitempty"`
-	Tags            []string            `json:"tags,omitempty"`
-	Version         int                 `json:"version" validate:"required,min=1"`
+	Content           *item.ItemContent   `json:"content,omitempty"`
+	MarkingScheme     *item.MarkingScheme `json:"marking_scheme,omitempty"`
+	DifficultyLevel   *string             `json:"difficulty_level,omitempty"`
+	CognitiveLevel    *string             `json:"cognitive_level,omitempty"`
+	EstimatedTimeSecs *int                `json:"estimated_time_secs,omitempty"`
+	Tags              []string            `json:"tags,omitempty"`
+	Version           int                 `json:"version" validate:"required,min=1"`
 }
 
 // ReviewItemRequest is the request body for recording a review decision.
 type ReviewItemRequest struct {
-	Decision     string `json:"decision" validate:"required,oneof=APPROVED REJECTED REVISION"`
-	Comments     string `json:"comments"`
-	ReviewerID   string `json:"reviewer_id" validate:"required,uuid"`
+	Decision   string `json:"decision" validate:"required,oneof=APPROVED REJECTED REVISION"`
+	Comments   string `json:"comments"`
+	ReviewerID string `json:"reviewer_id" validate:"required,uuid"`
 }
 
 // CalibrateItemRequest is the request body for setting IRT parameters.
 type CalibrateItemRequest struct {
-	A                   float64 `json:"a" validate:"required,min=0.1,max=5.0"`
-	B                   float64 `json:"b" validate:"required,min=-4.0,max=4.0"`
-	C                   float64 `json:"c" validate:"required,min=0,max=0.5"`
-	SEA                 float64 `json:"se_a" validate:"min=0"`
-	SEB                 float64 `json:"se_b" validate:"min=0"`
-	SEC                 float64 `json:"se_c" validate:"min=0"`
-	CalibrationSample   int     `json:"calibration_sample" validate:"required,min=100"`
-	PsychometricianID   string  `json:"psychometrician_id" validate:"required,uuid"`
+	A                 float64 `json:"a" validate:"required,min=0.1,max=5.0"`
+	B                 float64 `json:"b" validate:"required,min=-4.0,max=4.0"`
+	C                 float64 `json:"c" validate:"required,min=0,max=0.5"`
+	SEA               float64 `json:"se_a" validate:"min=0"`
+	SEB               float64 `json:"se_b" validate:"min=0"`
+	SEC               float64 `json:"se_c" validate:"min=0"`
+	CalibrationSample int     `json:"calibration_sample" validate:"required,min=100"`
+	PsychometricianID string  `json:"psychometrician_id" validate:"required,uuid"`
 }
 
 // ItemResponse is the API response for an item.
 // It redacts sensitive fields (answer key, solution, signatures) from the API response.
 type ItemResponse struct {
-	ID                uuid.UUID           `json:"id"`
-	OrganizationID    uuid.UUID           `json:"organization_id"`
-	ExternalID        string              `json:"external_id"`
-	ItemType          string              `json:"item_type"`
-	Status            string              `json:"status"`
-	SubjectID         uuid.UUID           `json:"subject_id"`
-	ChapterID         uuid.UUID           `json:"chapter_id"`
-	TopicID           uuid.UUID           `json:"topic_id"`
-	SubTopicID        *uuid.UUID          `json:"sub_topic_id,omitempty"`
-	Content           item.ItemContent    `json:"content"`
-	MarkingScheme     item.MarkingScheme  `json:"marking_scheme"`
-	DifficultyLevel   string              `json:"difficulty_level,omitempty"`
-	CognitiveLevel    string              `json:"cognitive_level,omitempty"`
-	EstimatedTimeSecs int                 `json:"estimated_time_secs"`
-	IRTParameters     *IRTParamsResponse  `json:"irt_parameters,omitempty"`
-	ExposureIndex     float64             `json:"exposure_index"`
-	PrimaryLanguage   string              `json:"primary_language"`
-	Tags              []string            `json:"tags"`
-	Version           int                 `json:"version"`
-	CreatedAt         string              `json:"created_at"`
-	UpdatedAt         string              `json:"updated_at"`
+	ID                uuid.UUID          `json:"id"`
+	OrganizationID    uuid.UUID          `json:"organization_id"`
+	ExternalID        string             `json:"external_id"`
+	ItemType          string             `json:"item_type"`
+	Status            string             `json:"status"`
+	SubjectID         uuid.UUID          `json:"subject_id"`
+	ChapterID         uuid.UUID          `json:"chapter_id"`
+	TopicID           uuid.UUID          `json:"topic_id"`
+	SubTopicID        *uuid.UUID         `json:"sub_topic_id,omitempty"`
+	Content           item.ItemContent   `json:"content"`
+	MarkingScheme     item.MarkingScheme `json:"marking_scheme"`
+	DifficultyLevel   string             `json:"difficulty_level,omitempty"`
+	CognitiveLevel    string             `json:"cognitive_level,omitempty"`
+	EstimatedTimeSecs int                `json:"estimated_time_secs"`
+	IRTParameters     *IRTParamsResponse `json:"irt_parameters,omitempty"`
+	ExposureIndex     float64            `json:"exposure_index"`
+	PrimaryLanguage   string             `json:"primary_language"`
+	Tags              []string           `json:"tags"`
+	Version           int                `json:"version"`
+	CreatedAt         string             `json:"created_at"`
+	UpdatedAt         string             `json:"updated_at"`
 }
 
 // IRTParamsResponse is the API-safe representation of IRT parameters.

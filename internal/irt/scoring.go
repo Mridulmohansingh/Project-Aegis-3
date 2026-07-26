@@ -58,7 +58,7 @@ func NewScoringService(logger *zap.Logger) *ScoringService {
 // 4. Person-fit analysis
 // 5. Percentile computation
 func (s *ScoringService) ScoreExam(
-	ctx context.Context, 
+	ctx context.Context,
 	examID uuid.UUID,
 	candidateIDs []uuid.UUID,
 	paperIDs []uuid.UUID,

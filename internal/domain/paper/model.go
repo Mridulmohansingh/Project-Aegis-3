@@ -14,9 +14,9 @@ type Paper struct {
 	ExamID           uuid.UUID
 	PaperCode        string
 	FormNumber       int
-	EncryptedItemIDs []byte    // AES-256-GCM encrypted JSON array of item UUIDs
-	EncryptedKeyID   string    // HSM key reference used for encryption
-	ItemSequenceHash [32]byte  // SHA-256 of ordered item IDs for integrity verification
+	EncryptedItemIDs []byte   // AES-256-GCM encrypted JSON array of item UUIDs
+	EncryptedKeyID   string   // HSM key reference used for encryption
+	ItemSequenceHash [32]byte // SHA-256 of ordered item IDs for integrity verification
 
 	// Psychometric profile
 	Profile PaperProfile
@@ -36,9 +36,9 @@ type PaperProfile struct {
 	ReliabilityEst   float64             // Estimated marginal reliability
 	TotalTimeEstSecs int                 // Sum of estimated_time_secs
 	ItemCount        int
-	DifficultyDist   map[string]int      // difficulty_level → count
-	CognitiveDist    map[string]int      // cognitive_level → count
-	ChapterDist      map[string]int      // chapter_id → count
+	DifficultyDist   map[string]int // difficulty_level → count
+	CognitiveDist    map[string]int // cognitive_level → count
+	ChapterDist      map[string]int // chapter_id → count
 }
 
 // GenerationLog captures the solver metrics

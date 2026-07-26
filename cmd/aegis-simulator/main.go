@@ -18,8 +18,6 @@ import (
 	"fmt"
 	"math"
 	"math/rand"
-	"os"
-	"path/filepath"
 	"time"
 
 	"github.com/google/uuid"
@@ -79,16 +77,16 @@ func main() {
 		}
 
 		itm := &item.Item{
-			ID:             uuid.New(),
-			OrganizationID: orgID,
-			ExternalID:     fmt.Sprintf("ITEM-%03d", i+1),
-			Type:           item.ItemTypeMCQSingle,
-			Status:         item.ItemStatusActive,
-			DifficultyLevel: diffLevel,
-			CognitiveLevel: cogLevel,
-			SubjectID:      subjectID,
-			ChapterID:      chapID,
-			TopicID:        uuid.New(),
+			ID:                uuid.New(),
+			OrganizationID:    orgID,
+			ExternalID:        fmt.Sprintf("ITEM-%03d", i+1),
+			Type:              item.ItemTypeMCQSingle,
+			Status:            item.ItemStatusActive,
+			DifficultyLevel:   diffLevel,
+			CognitiveLevel:    cogLevel,
+			SubjectID:         subjectID,
+			ChapterID:         chapID,
+			TopicID:           uuid.New(),
 			EstimatedTimeSecs: 90,
 			IRTParams: &item.IRTParameters{
 				A:                     a,
@@ -112,15 +110,31 @@ func main() {
 		SubjectID:      subjectID,
 		TotalItems:     30,
 		Constraints: blueprint.BlueprintConstraints{
-			ChapterConstraints: []blueprint.ChapterConstraint{
-				{ChapterID: chapters[0], MinItems: 6, MaxItems: 10},
-				{ChapterID: chapters[1], MinItems: 6, MaxItems: 10},
-				{ChapterID: chapters[2], MinItems: 6, MaxItems: 10},
-				{ChapterID: chapters[3], MinItems: 6, MaxItems: 10},
+			Chapters: []blueprint.ChapterConstraint{
+				{ChapterID: chapters[0], MinItems: 6, MaxItems: 10, Weight: 0.25},
+				{ChapterID: chapters[1], MinItems: 6, MaxItems: 10, Weight: 0.25},
+				{ChapterID: chapters[2], MinItems: 6, MaxItems: 10, Weight: 0.25},
+				{ChapterID: chapters[3], MinItems: 6, MaxItems: 10, Weight: 0.25},
 			},
-			MaxTimeSecs: 2700, // 45 minutes
+			TimeBudgetSecs:   2700, // 45 minutes
+			MaxExposureIndex: 0.9,
+			Difficulty: blueprint.DifficultyConstraint{
+				Distribution: blueprint.DifficultyDistribution{
+					Easy:     0.3,
+					Medium:   0.4,
+					Hard:     0.2,
+					VeryHard: 0.1,
+				},
+			},
+			CognitiveLevels: blueprint.CognitiveLevelConstraint{
+				Remember:   0.2,
+				Understand: 0.3,
+				Apply:      0.2,
+				Analyze:    0.1,
+				Evaluate:   0.1,
+				Create:     0.1,
+			},
 		},
-		Status:    blueprint.BlueprintStatusActive,
 		Version:   1,
 		CreatedAt: time.Now().UTC(),
 	}
@@ -129,11 +143,33 @@ func main() {
 	//  3. Generate balanced Test Paper
 	// ──────────────────────────────────────────────
 	logger.Info("Running Mixed Integer Programming solver to assemble Test Paper...")
-	solver := papergen.NewMIPSolver(logger)
-	generatedPaper, err := solver.Generate(bp, pool)
+	model := papergen.BuildConstraints(bp, pool, nil)
+	sol, err := model.Solve(10)
 	if err != nil {
-		logger.Fatal("Failed to generate test paper", zap.Error(err))
+		logger.Fatal("Failed to solve paper generation MIP model", zap.Error(err))
 	}
+	if sol.Status != papergen.StatusOptimal && sol.Status != papergen.StatusFeasible {
+		logger.Fatal("Solver failed to find a feasible solution: " + string(sol.Status))
+	}
+
+	// Select items based on solver results
+	var selectedItems []*item.Item
+	for i, itm := range pool {
+		if val, ok := sol.Values[i]; ok && val > 0.5 {
+			selectedItems = append(selectedItems, itm)
+		}
+	}
+
+	// Reconstruct a simple struct for the simulator
+	type SimulatorPaper struct {
+		ID    uuid.UUID
+		Items []*item.Item
+	}
+	generatedPaper := &SimulatorPaper{
+		ID:    uuid.New(),
+		Items: selectedItems,
+	}
+
 	logger.Info("Test Paper generated successfully!",
 		zap.Int("selected_questions", len(generatedPaper.Items)),
 	)
@@ -143,7 +179,7 @@ func main() {
 	// ──────────────────────────────────────────────
 	numCandidates := 10000
 	logger.Info("Simulating 10,000 candidates taking the exam...")
-	
+
 	allResponses := make(map[uuid.UUID][]*exam.Response)
 	candidateAbilities := make(map[uuid.UUID]float64)
 	candidateGenders := make(map[uuid.UUID]string) // for DIF analysis
@@ -153,12 +189,12 @@ func main() {
 
 	for c := 0; c < numCandidates; c++ {
 		candID := uuid.New()
-		
+
 		// Normal distributed ability: Box-Muller transform
 		u1 := rand.Float64()
 		u2 := rand.Float64()
 		theta := math.Sqrt(-2.0*math.Log(u1)) * math.Cos(2.0*math.Pi*u2)
-		
+
 		// Introduce minor gender bias in 10% of items to test DIF detection
 		gender := "REFERENCE"
 		if rand.Float64() < 0.5 {
@@ -291,58 +327,61 @@ func main() {
 	logger.Info("Performing Mantel-Haenszel DIF analysis...")
 	mh := &irt.MantelHaenszel{}
 	var difResults []export.DIFResult
+	var referenceResponses [][]int
+	var focalResponses [][]int
+	var referenceScores []int
+	var focalScores []int
 
-	for idx, itm := range generatedPaper.Items {
-		var referenceScores, focalScores []int
-		var referenceResponses, focalResponses []int
-
-		for candID, resps := range allResponses {
-			gender := candidateGenders[candID]
-			// Calculate raw total score
-			totScore := 0
-			for _, r := range resps {
-				if *r.SelectedOption == 1 {
-					totScore++
-				}
-			}
-
-			// Find item response
-			itmResp := 0
-			for _, r := range resps {
-				if r.ItemID == itm.ID && *r.SelectedOption == 1 {
-					itmResp = 1
-				}
-			}
-
-			if gender == "REFERENCE" {
-				referenceScores = append(referenceScores, totScore)
-				referenceResponses = append(referenceResponses, itmResp)
-			} else {
-				focalScores = append(focalScores, totScore)
-				focalResponses = append(focalResponses, itmResp)
+	for candID, resps := range allResponses {
+		gender := candidateGenders[candID]
+		totScore := 0
+		for _, r := range resps {
+			if *r.SelectedOption == 1 {
+				totScore++
 			}
 		}
 
-		res, err := mh.Analyze(referenceResponses, referenceScores, focalResponses, focalScores)
-		if err == nil {
+		respVec := make([]int, len(generatedPaper.Items))
+		for i, itm := range generatedPaper.Items {
+			for _, r := range resps {
+				if r.ItemID == itm.ID && *r.SelectedOption == 1 {
+					respVec[i] = 1
+					break
+				}
+			}
+		}
+
+		if gender == "REFERENCE" {
+			referenceScores = append(referenceScores, totScore)
+			referenceResponses = append(referenceResponses, respVec)
+		} else {
+			focalScores = append(focalScores, totScore)
+			focalResponses = append(focalResponses, respVec)
+		}
+	}
+
+	results, err := mh.DetectDIF(referenceResponses, focalResponses, referenceScores, focalScores)
+	if err == nil {
+		for i, res := range results {
+			itm := generatedPaper.Items[i]
 			difResults = append(difResults, export.DIFResult{
 				ItemID:           itm.ID,
 				ExternalID:       itm.ExternalID,
 				GroupingVariable: "Gender",
-				DeltaMH:          res.DeltaMH,
-				ChiSquare:        res.ChiSquare,
+				DeltaMH:          res.MHDelta,
+				ChiSquare:        res.MHChiSquare,
 				PValue:           res.PValue,
-				ETSCategory:      string(res.Category),
+				ETSCategory:      res.DIFCategory,
 				ReferenceN:       len(referenceResponses),
 				FocalN:           len(focalResponses),
-				Flagged:          res.Category == irt.DIFCategoryC,
+				Flagged:          res.Flagged,
 			})
 
-			if res.Category == irt.DIFCategoryC || idx == 5 {
-				logger.Warn("Significant DIF Flagged",
+			if res.Flagged || i == 5 {
+				logger.Info("DIF Analysis Result",
 					zap.String("item_id", itm.ExternalID),
-					zap.Float64("delta_mh", res.DeltaMH),
-					zap.String("category", string(res.Category)),
+					zap.Float64("delta_mh", res.MHDelta),
+					zap.String("category", res.DIFCategory),
 					zap.Float64("p_value", res.PValue),
 				)
 			}
@@ -358,7 +397,7 @@ func main() {
 
 	exporter.ExportItemBank(pool, "pool_items.csv")
 	exporter.ExportItemBank(generatedPaper.Items, "paper_items.csv")
-	
+
 	// Create simplified items list of UUIDs
 	var itemIDs []uuid.UUID
 	for _, itm := range generatedPaper.Items {
@@ -377,7 +416,7 @@ func main() {
 		itemVariances[i] = p * (1.0 - p)
 	}
 	examSummary := analysisEngine.ComputeExamStatistics(rawScores, estimatedThetas, len(generatedPaper.Items), itemVariances)
-	
+
 	exporter.ExportExamSummary([]export.ExamSummaryRow{
 		{
 			ExamID:              examID,

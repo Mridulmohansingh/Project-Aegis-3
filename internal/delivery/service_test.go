@@ -2,10 +2,11 @@ package delivery_test
 
 import (
 	"context"
+	"crypto/ed25519"
+	"crypto/rand"
 	"errors"
 	"sync"
 	"testing"
-	"time"
 
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
@@ -130,7 +131,15 @@ func (m *MockResponseRepository) GetByExamAndItem(ctx interface{}, examID, itemI
 }
 
 // MockKeyManager implements crypto.KeyManager
-type MockKeyManager struct{}
+type MockKeyManager struct {
+	pub ed25519.PublicKey
+	prv ed25519.PrivateKey
+}
+
+func NewMockKeyManager() *MockKeyManager {
+	pub, prv, _ := ed25519.GenerateKey(rand.Reader)
+	return &MockKeyManager{pub: pub, prv: prv}
+}
 
 func (m *MockKeyManager) GenerateDataKey(keyID string) ([]byte, []byte, error) {
 	return make([]byte, 32), make([]byte, 32), nil
@@ -140,15 +149,15 @@ func (m *MockKeyManager) DecryptDataKey(keyID string, encryptedKey []byte) ([]by
 	return make([]byte, 32), nil
 }
 
-func (m *MockKeyManager) GetSigningKey(keyID string) ([]byte, error)      { return nil, nil }
-func (m *MockKeyManager) GetVerificationKey(keyID string) ([]byte, error) { return nil, nil }
+func (m *MockKeyManager) GetSigningKey(keyID string) (ed25519.PrivateKey, error)      { return m.prv, nil }
+func (m *MockKeyManager) GetVerificationKey(keyID string) (ed25519.PublicKey, error) { return m.pub, nil }
 
 func setupDeliveryService(t *testing.T) (*delivery.Service, *MockExamRepository, *MockSessionRepository, *MockResponseRepository) {
 	examRepo := &MockExamRepository{exams: make(map[uuid.UUID]*exam.Exam)}
 	sessionRepo := &MockSessionRepository{sessions: make(map[uuid.UUID]*exam.ExamSession)}
 	responseRepo := &MockResponseRepository{responses: make(map[uuid.UUID]*exam.Response)}
 	
-	km := &MockKeyManager{}
+	km := NewMockKeyManager()
 	encryptSvc := crypto.NewEncryptionService(km)
 	logger := zap.NewNop()
 

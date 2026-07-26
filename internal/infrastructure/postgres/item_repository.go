@@ -585,9 +585,9 @@ func (r *ItemRepository) scanItemFromRow(rows pgx.Rows) (*item.Item, error) {
 	// Reconstruct classical stats
 	if pVal != nil {
 		i.ClassicalStats = &item.ClassicalStats{
-			PValue:             *pVal,
-			DiscriminationIndex: deref(&discIdx),
-			PointBiserial:       deref(&ptBis),
+			PValue:              *pVal,
+			DiscriminationIndex: deref(discIdx),
+			PointBiserial:       deref(ptBis),
 		}
 		if distAnalysis != nil {
 			json.Unmarshal(distAnalysis, &i.ClassicalStats.DistractorAnalysis)
@@ -654,7 +654,7 @@ func (r *ItemRepository) scanItemFromQueryRow(row pgx.Row) (*item.Item, error) {
 	}
 	if pVal != nil {
 		i.ClassicalStats = &item.ClassicalStats{
-			PValue: *pVal, DiscriminationIndex: deref(&discIdx), PointBiserial: deref(&ptBis),
+			PValue: *pVal, DiscriminationIndex: deref(discIdx), PointBiserial: deref(ptBis),
 		}
 		if distAnalysis != nil {
 			json.Unmarshal(distAnalysis, &i.ClassicalStats.DistractorAnalysis)

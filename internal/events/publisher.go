@@ -24,12 +24,12 @@ import (
 
 // Topic constants for Kafka topics.
 const (
-	TopicItemEvents      = "aegis.items"
-	TopicExamEvents      = "aegis.exams"
-	TopicResponseEvents  = "aegis.responses"
-	TopicScoringEvents   = "aegis.scoring"
-	TopicAuditEvents     = "aegis.audit"
-	TopicNotifications   = "aegis.notifications"
+	TopicItemEvents     = "aegis.items"
+	TopicExamEvents     = "aegis.exams"
+	TopicResponseEvents = "aegis.responses"
+	TopicScoringEvents  = "aegis.scoring"
+	TopicAuditEvents    = "aegis.audit"
+	TopicNotifications  = "aegis.notifications"
 )
 
 // EventType identifies the type of domain event.
@@ -37,39 +37,39 @@ type EventType string
 
 const (
 	// Item lifecycle events
-	EventItemCreated     EventType = "ITEM_CREATED"
-	EventItemUpdated     EventType = "ITEM_UPDATED"
-	EventItemSubmitted   EventType = "ITEM_SUBMITTED_FOR_REVIEW"
-	EventItemReviewed    EventType = "ITEM_REVIEWED"
-	EventItemCalibrated  EventType = "ITEM_CALIBRATED"
-	EventItemActivated   EventType = "ITEM_ACTIVATED"
-	EventItemRetired     EventType = "ITEM_RETIRED"
-	EventItemFlagged     EventType = "ITEM_FLAGGED_FOR_REVIEW"
+	EventItemCreated    EventType = "ITEM_CREATED"
+	EventItemUpdated    EventType = "ITEM_UPDATED"
+	EventItemSubmitted  EventType = "ITEM_SUBMITTED_FOR_REVIEW"
+	EventItemReviewed   EventType = "ITEM_REVIEWED"
+	EventItemCalibrated EventType = "ITEM_CALIBRATED"
+	EventItemActivated  EventType = "ITEM_ACTIVATED"
+	EventItemRetired    EventType = "ITEM_RETIRED"
+	EventItemFlagged    EventType = "ITEM_FLAGGED_FOR_REVIEW"
 
 	// Exam lifecycle events
-	EventExamCreated         EventType = "EXAM_CREATED"
-	EventExamConfigured      EventType = "EXAM_CONFIGURED"
-	EventPapersGenerated     EventType = "PAPERS_GENERATED"
-	EventExamScheduled       EventType = "EXAM_SCHEDULED"
-	EventExamStarted         EventType = "EXAM_STARTED"
-	EventExamCompleted       EventType = "EXAM_COMPLETED"
+	EventExamCreated     EventType = "EXAM_CREATED"
+	EventExamConfigured  EventType = "EXAM_CONFIGURED"
+	EventPapersGenerated EventType = "PAPERS_GENERATED"
+	EventExamScheduled   EventType = "EXAM_SCHEDULED"
+	EventExamStarted     EventType = "EXAM_STARTED"
+	EventExamCompleted   EventType = "EXAM_COMPLETED"
 
 	// Session events
-	EventSessionInitialized  EventType = "SESSION_INITIALIZED"
-	EventSessionStarted      EventType = "SESSION_STARTED"
-	EventSessionCompleted    EventType = "SESSION_COMPLETED"
-	EventSessionTimedOut     EventType = "SESSION_TIMED_OUT"
-	EventSessionTerminated   EventType = "SESSION_TERMINATED"
+	EventSessionInitialized EventType = "SESSION_INITIALIZED"
+	EventSessionStarted     EventType = "SESSION_STARTED"
+	EventSessionCompleted   EventType = "SESSION_COMPLETED"
+	EventSessionTimedOut    EventType = "SESSION_TIMED_OUT"
+	EventSessionTerminated  EventType = "SESSION_TERMINATED"
 
 	// Scoring events
-	EventScoringStarted      EventType = "SCORING_STARTED"
-	EventScoringCompleted    EventType = "SCORING_COMPLETED"
-	EventResultsPublished    EventType = "RESULTS_PUBLISHED"
+	EventScoringStarted   EventType = "SCORING_STARTED"
+	EventScoringCompleted EventType = "SCORING_COMPLETED"
+	EventResultsPublished EventType = "RESULTS_PUBLISHED"
 
 	// Analysis events
-	EventAnalysisCompleted   EventType = "ANALYSIS_COMPLETED"
-	EventDIFDetected         EventType = "DIF_DETECTED"
-	EventPersonFitFlagged    EventType = "PERSON_FIT_FLAGGED"
+	EventAnalysisCompleted EventType = "ANALYSIS_COMPLETED"
+	EventDIFDetected       EventType = "DIF_DETECTED"
+	EventPersonFitFlagged  EventType = "PERSON_FIT_FLAGGED"
 )
 
 // ──────────────────────────────────────────────
@@ -201,13 +201,13 @@ func (p *InMemoryPublisher) ClearEvents() {
 
 // ItemEventData is the payload for item-related events.
 type ItemEventData struct {
-	ItemID      string `json:"item_id"`
-	ExternalID  string `json:"external_id"`
-	Status      string `json:"status"`
-	PrevStatus  string `json:"prev_status,omitempty"`
-	SubjectID   string `json:"subject_id"`
-	ChangeType  string `json:"change_type,omitempty"`
-	Version     int    `json:"version"`
+	ItemID     string `json:"item_id"`
+	ExternalID string `json:"external_id"`
+	Status     string `json:"status"`
+	PrevStatus string `json:"prev_status,omitempty"`
+	SubjectID  string `json:"subject_id"`
+	ChangeType string `json:"change_type,omitempty"`
+	Version    int    `json:"version"`
 }
 
 // ExamEventData is the payload for exam-related events.
@@ -231,17 +231,17 @@ type SessionEventData struct {
 
 // ScoringEventData is the payload for scoring-related events.
 type ScoringEventData struct {
-	ExamID          string  `json:"exam_id"`
-	CandidatesScored int   `json:"candidates_scored"`
-	MeanScore       float64 `json:"mean_score,omitempty"`
-	ScoringVersion  string  `json:"scoring_version"`
+	ExamID           string  `json:"exam_id"`
+	CandidatesScored int     `json:"candidates_scored"`
+	MeanScore        float64 `json:"mean_score,omitempty"`
+	ScoringVersion   string  `json:"scoring_version"`
 }
 
 // AnalysisEventData is the payload for analysis-related events.
 type AnalysisEventData struct {
-	ExamID          string   `json:"exam_id"`
-	ItemsFlagged    int      `json:"items_flagged"`
-	DIFDetected     int      `json:"dif_detected"`
-	PersonFitFlags  int      `json:"person_fit_flags"`
-	FlaggedItemIDs  []string `json:"flagged_item_ids,omitempty"`
+	ExamID         string   `json:"exam_id"`
+	ItemsFlagged   int      `json:"items_flagged"`
+	DIFDetected    int      `json:"dif_detected"`
+	PersonFitFlags int      `json:"person_fit_flags"`
+	FlaggedItemIDs []string `json:"flagged_item_ids,omitempty"`
 }

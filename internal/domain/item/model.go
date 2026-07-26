@@ -15,6 +15,7 @@
 package item
 
 import (
+	"context"
 	"crypto/sha256"
 	"encoding/json"
 	"fmt"
@@ -88,12 +89,12 @@ func (s ItemStatus) IsValid() bool {
 // The key is the current state; the value is the set of valid next states.
 var validTransitions = map[ItemStatus][]ItemStatus{
 	ItemStatusDraft:       {ItemStatusReview},
-	ItemStatusReview:      {ItemStatusDraft, ItemStatusCalibration},       // Can be sent back for revision
-	ItemStatusCalibration: {ItemStatusReview, ItemStatusPilot},            // Can be sent back for re-review
-	ItemStatusPilot:       {ItemStatusActive, ItemStatusCalibration},      // Can go back for re-calibration
+	ItemStatusReview:      {ItemStatusDraft, ItemStatusCalibration},  // Can be sent back for revision
+	ItemStatusCalibration: {ItemStatusReview, ItemStatusPilot},       // Can be sent back for re-review
+	ItemStatusPilot:       {ItemStatusActive, ItemStatusCalibration}, // Can go back for re-calibration
 	ItemStatusActive:      {ItemStatusSuspended, ItemStatusRetired},
-	ItemStatusSuspended:   {ItemStatusActive, ItemStatusRetired},          // Can be reactivated
-	ItemStatusRetired:     {},                                              // Terminal state
+	ItemStatusSuspended:   {ItemStatusActive, ItemStatusRetired}, // Can be reactivated
+	ItemStatusRetired:     {},                                    // Terminal state
 }
 
 // CanTransitionTo checks if a transition from the current status to the target is valid.
@@ -213,9 +214,9 @@ type MediaRef struct {
 
 // SubQuestion represents a sub-item within a case-based question.
 type SubQuestion struct {
-	Index         int      `json:"index" db:"index"`
-	Stem          string   `json:"stem" db:"stem"`
-	Options       []Option `json:"options,omitempty" db:"options"`
+	Index         int           `json:"index" db:"index"`
+	Stem          string        `json:"stem" db:"stem"`
+	Options       []Option      `json:"options,omitempty" db:"options"`
 	MarkingScheme MarkingScheme `json:"marking_scheme" db:"marking_scheme"`
 }
 
@@ -350,12 +351,12 @@ func (e ExposureControl) IsAvailable(maxExposureIndex float64) bool {
 // ApprovalChain records the cryptographically signed approval workflow.
 type ApprovalChain struct {
 	// Author
-	AuthorID        uuid.UUID  `json:"author_id" db:"author_id"`
-	AuthorSignature []byte     `json:"-" db:"author_signature"` // Never serialize signatures to API
+	AuthorID        uuid.UUID `json:"author_id" db:"author_id"`
+	AuthorSignature []byte    `json:"-" db:"author_signature"` // Never serialize signatures to API
 
 	// Reviewer
-	ReviewerID       *uuid.UUID     `json:"reviewer_id,omitempty" db:"reviewer_id"`
-	ReviewerSignature []byte        `json:"-" db:"reviewer_signature"`
+	ReviewerID        *uuid.UUID     `json:"reviewer_id,omitempty" db:"reviewer_id"`
+	ReviewerSignature []byte         `json:"-" db:"reviewer_signature"`
 	ReviewerDecision  ReviewDecision `json:"reviewer_decision,omitempty" db:"reviewer_decision"`
 	ReviewedAt        *time.Time     `json:"reviewed_at,omitempty" db:"reviewed_at"`
 
@@ -407,27 +408,27 @@ type Item struct {
 	ExternalID     string    `json:"external_id" db:"external_id"`
 
 	// Classification
-	Type           ItemType       `json:"item_type" db:"item_type"`
-	Status         ItemStatus     `json:"status" db:"status"`
+	Type            ItemType        `json:"item_type" db:"item_type"`
+	Status          ItemStatus      `json:"status" db:"status"`
 	DifficultyLevel DifficultyLevel `json:"difficulty_level" db:"difficulty_level"`
-	CognitiveLevel CognitiveLevel  `json:"cognitive_level" db:"cognitive_level"`
+	CognitiveLevel  CognitiveLevel  `json:"cognitive_level" db:"cognitive_level"`
 
 	// Taxonomy
-	SubjectID       uuid.UUID  `json:"subject_id" db:"subject_id"`
-	ChapterID       uuid.UUID  `json:"chapter_id" db:"chapter_id"`
-	TopicID         uuid.UUID  `json:"topic_id" db:"topic_id"`
-	SubTopicID      *uuid.UUID `json:"sub_topic_id,omitempty" db:"sub_topic_id"`
+	SubjectID         uuid.UUID  `json:"subject_id" db:"subject_id"`
+	ChapterID         uuid.UUID  `json:"chapter_id" db:"chapter_id"`
+	TopicID           uuid.UUID  `json:"topic_id" db:"topic_id"`
+	SubTopicID        *uuid.UUID `json:"sub_topic_id,omitempty" db:"sub_topic_id"`
 	LearningOutcomeID *uuid.UUID `json:"learning_outcome_id,omitempty" db:"learning_outcome_id"`
 
 	// Content (encrypted at rest via application-layer encryption)
-	Content       ItemContent   `json:"content" db:"question_content"`
-	AnswerKey     []byte        `json:"-" db:"answer_key"`      // AES-256-GCM encrypted, never in API response
-	Solution      []byte        `json:"-" db:"solution"`         // AES-256-GCM encrypted
-	MarkingScheme MarkingScheme `json:"marking_scheme" db:"marking_scheme"`
-	EstimatedTimeSecs int       `json:"estimated_time_secs" db:"estimated_time_secs"`
+	Content           ItemContent   `json:"content" db:"question_content"`
+	AnswerKey         []byte        `json:"-" db:"answer_key"` // AES-256-GCM encrypted, never in API response
+	Solution          []byte        `json:"-" db:"solution"`   // AES-256-GCM encrypted
+	MarkingScheme     MarkingScheme `json:"marking_scheme" db:"marking_scheme"`
+	EstimatedTimeSecs int           `json:"estimated_time_secs" db:"estimated_time_secs"`
 
 	// Psychometric Parameters
-	IRTParams      *IRTParameters  `json:"irt_parameters,omitempty" db:"-"` // Flattened to columns in DB
+	IRTParams      *IRTParameters  `json:"irt_parameters,omitempty" db:"-"`  // Flattened to columns in DB
 	ClassicalStats *ClassicalStats `json:"classical_stats,omitempty" db:"-"` // Flattened to columns in DB
 
 	// Exposure Control
@@ -442,12 +443,12 @@ type Item struct {
 	Approval ApprovalChain `json:"approval" db:"-"` // Flattened to columns in DB
 
 	// Metadata
-	Tags      []string  `json:"tags" db:"tags"`
-	Version   int       `json:"version" db:"version"`
-	CreatedAt time.Time `json:"created_at" db:"created_at"`
-	CreatedBy uuid.UUID `json:"created_by" db:"created_by"`
-	UpdatedAt time.Time `json:"updated_at" db:"updated_at"`
-	UpdatedBy uuid.UUID `json:"updated_by" db:"updated_by"`
+	Tags      []string   `json:"tags" db:"tags"`
+	Version   int        `json:"version" db:"version"`
+	CreatedAt time.Time  `json:"created_at" db:"created_at"`
+	CreatedBy uuid.UUID  `json:"created_by" db:"created_by"`
+	UpdatedAt time.Time  `json:"updated_at" db:"updated_at"`
+	UpdatedBy uuid.UUID  `json:"updated_by" db:"updated_by"`
 	DeletedAt *time.Time `json:"-" db:"deleted_at"`
 }
 
@@ -469,16 +470,16 @@ func NewItem(
 
 	now := time.Now().UTC()
 	return &Item{
-		ID:             uuid.New(),
-		OrganizationID: orgID,
-		ExternalID:     externalID,
-		Type:           itemType,
-		Status:         ItemStatusDraft,
-		SubjectID:      subjectID,
-		ChapterID:      chapterID,
-		TopicID:        topicID,
-		Content:        content,
-		MarkingScheme:  markingScheme,
+		ID:                uuid.New(),
+		OrganizationID:    orgID,
+		ExternalID:        externalID,
+		Type:              itemType,
+		Status:            ItemStatusDraft,
+		SubjectID:         subjectID,
+		ChapterID:         chapterID,
+		TopicID:           topicID,
+		Content:           content,
+		MarkingScheme:     markingScheme,
 		EstimatedTimeSecs: 120, // Default 2 minutes
 		PrimaryLanguage:   "en",
 		Exposure: ExposureControl{
@@ -648,40 +649,40 @@ type ItemTranslation struct {
 
 // ItemFilter defines the filter criteria for querying items.
 type ItemFilter struct {
-	OrganizationID *uuid.UUID       `json:"organization_id"`
-	SubjectID      *uuid.UUID       `json:"subject_id"`
-	ChapterID      *uuid.UUID       `json:"chapter_id"`
-	TopicID        *uuid.UUID       `json:"topic_id"`
-	Status         *ItemStatus      `json:"status"`
-	DifficultyLevel *DifficultyLevel `json:"difficulty_level"`
-	CognitiveLevel *CognitiveLevel  `json:"cognitive_level"`
-	ItemType       *ItemType        `json:"item_type"`
-	Tags           []string         `json:"tags"`
-	HasIRTParams   *bool            `json:"has_irt_params"`
-	MaxExposureIndex *float64       `json:"max_exposure_index"`
-	Language       *string          `json:"language"`
+	OrganizationID   *uuid.UUID       `json:"organization_id"`
+	SubjectID        *uuid.UUID       `json:"subject_id"`
+	ChapterID        *uuid.UUID       `json:"chapter_id"`
+	TopicID          *uuid.UUID       `json:"topic_id"`
+	Status           *ItemStatus      `json:"status"`
+	DifficultyLevel  *DifficultyLevel `json:"difficulty_level"`
+	CognitiveLevel   *CognitiveLevel  `json:"cognitive_level"`
+	ItemType         *ItemType        `json:"item_type"`
+	Tags             []string         `json:"tags"`
+	HasIRTParams     *bool            `json:"has_irt_params"`
+	MaxExposureIndex *float64         `json:"max_exposure_index"`
+	Language         *string          `json:"language"`
 }
 
 // ItemRepository defines the persistence operations for items.
 type ItemRepository interface {
 	// Create persists a new item.
-	Create(item *Item) error
+	Create(ctx context.Context, item *Item) error
 	// GetByID retrieves an item by its UUID.
-	GetByID(orgID, id uuid.UUID) (*Item, error)
+	GetByID(ctx context.Context, orgID, id uuid.UUID) (*Item, error)
 	// GetByExternalID retrieves an item by its external identifier within an organization.
-	GetByExternalID(orgID uuid.UUID, externalID string) (*Item, error)
+	GetByExternalID(ctx context.Context, orgID uuid.UUID, externalID string) (*Item, error)
 	// Update persists changes to an existing item with optimistic locking.
-	Update(item *Item) error
+	Update(ctx context.Context, item *Item) error
 	// SoftDelete marks an item as deleted without physical removal.
-	SoftDelete(orgID, id uuid.UUID, deletedBy uuid.UUID) error
+	SoftDelete(ctx context.Context, orgID, id uuid.UUID, deletedBy uuid.UUID) error
 	// List retrieves a filtered, paginated list of items.
-	List(filter ItemFilter, cursor string, limit int) ([]*Item, string, error)
+	List(ctx context.Context, filter ItemFilter, cursor string, limit int) ([]*Item, string, error)
 	// GetEligibleForPaperGeneration returns active items matching paper generation criteria.
-	GetEligibleForPaperGeneration(orgID, subjectID uuid.UUID, maxExposureIndex float64) ([]*Item, error)
+	GetEligibleForPaperGeneration(ctx context.Context, orgID, subjectID uuid.UUID, maxExposureIndex float64) ([]*Item, error)
 	// GetEnemies returns all enemy pairs for a given item.
-	GetEnemies(itemID uuid.UUID) ([]ItemEnemy, error)
+	GetEnemies(ctx context.Context, itemID uuid.UUID) ([]ItemEnemy, error)
 	// CreateVersion records an item version change.
-	CreateVersion(version *ItemVersion) error
+	CreateVersion(ctx context.Context, version *ItemVersion) error
 	// GetVersionHistory returns the version history of an item.
-	GetVersionHistory(itemID uuid.UUID) ([]ItemVersion, error)
+	GetVersionHistory(ctx context.Context, itemID uuid.UUID) ([]ItemVersion, error)
 }

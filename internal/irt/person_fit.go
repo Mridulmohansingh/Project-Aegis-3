@@ -35,12 +35,12 @@ func (pf *PersonFit) ComputeLz(items []ItemParams, responses []int, theta float6
 		q := 1.0 - p
 		pSafe := math.Max(1e-10, p)
 		qSafe := math.Max(1e-10, q)
-		
+
 		u := float64(responses[i])
-		
+
 		l0 += u*math.Log(pSafe) + (1.0-u)*math.Log(qSafe)
 		el0 += p*math.Log(pSafe) + q*math.Log(qSafe)
-		
+
 		logRatio := math.Log(pSafe / qSafe)
 		varl0 += p * q * logRatio * logRatio
 	}
@@ -50,7 +50,7 @@ func (pf *PersonFit) ComputeLz(items []ItemParams, responses []int, theta float6
 	}
 
 	lz := (l0 - el0) / math.Sqrt(varl0)
-	
+
 	// p-value from normal distribution (lower tail)
 	pValue := 0.5 * (1.0 + math.Erf(lz/math.Sqrt(2.0)))
 

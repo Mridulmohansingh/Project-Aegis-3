@@ -51,10 +51,10 @@ type KeyManager interface {
 
 // EncryptionService provides AES-256-GCM authenticated encryption.
 // It uses the envelope encryption pattern:
-//   1. A Data Encryption Key (DEK) is generated per item/session.
-//   2. The DEK is used to encrypt the data.
-//   3. The DEK itself is encrypted by a Key Encryption Key (KEK) in the HSM/KMS.
-//   4. The encrypted DEK is stored alongside the ciphertext.
+//  1. A Data Encryption Key (DEK) is generated per item/session.
+//  2. The DEK is used to encrypt the data.
+//  3. The DEK itself is encrypted by a Key Encryption Key (KEK) in the HSM/KMS.
+//  4. The encrypted DEK is stored alongside the ciphertext.
 type EncryptionService struct {
 	keyManager KeyManager
 	mu         sync.RWMutex
@@ -289,7 +289,7 @@ func SHA256Chain(previousHash, data []byte) [32]byte {
 // Production must use HSM-backed or Vault-backed key managers.
 type LocalKeyManager struct {
 	mu          sync.RWMutex
-	masterKey   []byte              // 32-byte master KEK
+	masterKey   []byte // 32-byte master KEK
 	signingKeys map[string]ed25519.PrivateKey
 }
 

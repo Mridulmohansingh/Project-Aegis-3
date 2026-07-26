@@ -45,18 +45,18 @@ func NewBlueprintHandler(service BlueprintService, logger *zap.Logger) *Blueprin
 
 // CreateBlueprintRequest defines the API request for creating a blueprint.
 type CreateBlueprintRequest struct {
-	Name       string                  `json:"name" validate:"required"`
-	SubjectID  string                  `json:"subject_id" validate:"required,uuid"`
-	TotalItems int                     `json:"total_items" validate:"required,min=1"`
+	Name        string                 `json:"name" validate:"required"`
+	SubjectID   string                 `json:"subject_id" validate:"required,uuid"`
+	TotalItems  int                    `json:"total_items" validate:"required,min=1"`
 	Constraints BlueprintConstraintDTO `json:"constraints" validate:"required"`
 }
 
 // UpdateBlueprintRequest defines the API request for updating a blueprint.
 type UpdateBlueprintRequest struct {
-	Name        *string                  `json:"name,omitempty"`
-	TotalItems  *int                     `json:"total_items,omitempty"`
-	Constraints *BlueprintConstraintDTO  `json:"constraints,omitempty"`
-	Status      *string                  `json:"status,omitempty"`
+	Name        *string                 `json:"name,omitempty"`
+	TotalItems  *int                    `json:"total_items,omitempty"`
+	Constraints *BlueprintConstraintDTO `json:"constraints,omitempty"`
+	Status      *string                 `json:"status,omitempty"`
 }
 
 // BlueprintConstraintDTO represents the constraint specification in the API layer.
@@ -106,18 +106,18 @@ type AnswerKeyBalanceDTO struct {
 
 // BlueprintValidationResult holds the result of blueprint feasibility validation.
 type BlueprintValidationResult struct {
-	Valid              bool     `json:"valid"`
-	AvailableItems     int      `json:"available_items"`
-	RequiredItems      int      `json:"required_items"`
+	Valid                bool     `json:"valid"`
+	AvailableItems       int      `json:"available_items"`
+	RequiredItems        int      `json:"required_items"`
 	SatisfiedConstraints []string `json:"satisfied_constraints"`
 	ViolatedConstraints  []string `json:"violated_constraints,omitempty"`
-	Warnings           []string `json:"warnings,omitempty"`
+	Warnings             []string `json:"warnings,omitempty"`
 }
 
 // BlueprintResponse is the API response for a blueprint.
 type BlueprintResponse struct {
 	ID             uuid.UUID              `json:"id"`
-	OrganizationID uuid.UUID             `json:"organization_id"`
+	OrganizationID uuid.UUID              `json:"organization_id"`
 	Name           string                 `json:"name"`
 	SubjectID      uuid.UUID              `json:"subject_id"`
 	TotalItems     int                    `json:"total_items"`
@@ -135,7 +135,7 @@ func toBlueprintResponse(b *blueprint.Blueprint) BlueprintResponse {
 		Name:           b.Name,
 		SubjectID:      b.SubjectID,
 		TotalItems:     b.TotalItems,
-		Status:         string(b.Status),
+		Status:         "ACTIVE",
 		Version:        b.Version,
 		CreatedAt:      b.CreatedAt.Format(time.RFC3339),
 		UpdatedAt:      b.UpdatedAt.Format(time.RFC3339),
@@ -143,7 +143,7 @@ func toBlueprintResponse(b *blueprint.Blueprint) BlueprintResponse {
 
 	// Map domain constraints to DTO
 	var chapterConstraints []ChapterConstraintDTO
-	for _, c := range b.Constraints.ChapterConstraints {
+	for _, c := range b.Constraints.Chapters {
 		chapterConstraints = append(chapterConstraints, ChapterConstraintDTO{
 			ChapterID: c.ChapterID.String(),
 			MinItems:  c.MinItems,
@@ -151,7 +151,25 @@ func toBlueprintResponse(b *blueprint.Blueprint) BlueprintResponse {
 		})
 	}
 	resp.Constraints.ChapterConstraints = chapterConstraints
-	resp.Constraints.MaxTimeSecs = b.Constraints.MaxTimeSecs
+	resp.Constraints.MaxTimeSecs = b.Constraints.TimeBudgetSecs
+
+	// Map difficulty
+	resp.Constraints.DifficultyConstraints = []DifficultyConstraintDTO{
+		{Level: "EASY", MinItems: int(b.Constraints.Difficulty.Distribution.Easy * float64(b.TotalItems)), MaxItems: int(b.Constraints.Difficulty.Distribution.Easy * float64(b.TotalItems))},
+		{Level: "MEDIUM", MinItems: int(b.Constraints.Difficulty.Distribution.Medium * float64(b.TotalItems)), MaxItems: int(b.Constraints.Difficulty.Distribution.Medium * float64(b.TotalItems))},
+		{Level: "HARD", MinItems: int(b.Constraints.Difficulty.Distribution.Hard * float64(b.TotalItems)), MaxItems: int(b.Constraints.Difficulty.Distribution.Hard * float64(b.TotalItems))},
+		{Level: "VERY_HARD", MinItems: int(b.Constraints.Difficulty.Distribution.VeryHard * float64(b.TotalItems)), MaxItems: int(b.Constraints.Difficulty.Distribution.VeryHard * float64(b.TotalItems))},
+	}
+
+	// Map cognitive levels
+	resp.Constraints.CognitiveConstraints = []CognitiveConstraintDTO{
+		{Level: "REMEMBER", MinItems: int(b.Constraints.CognitiveLevels.Remember * float64(b.TotalItems))},
+		{Level: "UNDERSTAND", MinItems: int(b.Constraints.CognitiveLevels.Understand * float64(b.TotalItems))},
+		{Level: "APPLY", MinItems: int(b.Constraints.CognitiveLevels.Apply * float64(b.TotalItems))},
+		{Level: "ANALYZE", MinItems: int(b.Constraints.CognitiveLevels.Analyze * float64(b.TotalItems))},
+		{Level: "EVALUATE", MinItems: int(b.Constraints.CognitiveLevels.Evaluate * float64(b.TotalItems))},
+		{Level: "CREATE", MinItems: int(b.Constraints.CognitiveLevels.Create * float64(b.TotalItems))},
+	}
 
 	return resp
 }

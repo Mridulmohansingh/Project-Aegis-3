@@ -10,7 +10,7 @@ import (
 // L(θ) = Σ[u_i * ln P_i(θ) + (1-u_i) * ln(1 - P_i(θ))]
 //
 // Newton-Raphson update:
-// θ_{t+1} = θ_t - L'(θ_t) / L''(θ_t)
+// θ_{t+1} = θ_t - L'(θ_t) / L”(θ_t)
 type MLEEstimator struct {
 	MaxIterations int
 	Convergence   float64 // Convergence criterion (default 0.001)
@@ -201,7 +201,7 @@ func (e *EAPEstimator) Estimate(items []ItemParams, responses []int) (*Estimatio
 
 	for i := 0; i < e.QuadPoints; i++ {
 		theta := e.MinTheta + float64(i)*step
-		
+
 		// Prior probability density
 		z := (theta - e.PriorMean) / e.PriorSD
 		prior := math.Exp(-0.5*z*z) / (e.PriorSD * math.Sqrt(2*math.Pi))
@@ -234,7 +234,7 @@ func (e *EAPEstimator) Estimate(items []ItemParams, responses []int) (*Estimatio
 		theta := e.MinTheta + float64(i)*step
 		z := (theta - e.PriorMean) / e.PriorSD
 		prior := math.Exp(-0.5*z*z) / (e.PriorSD * math.Sqrt(2*math.Pi))
-		
+
 		likelihood := 1.0
 		for j, item := range items {
 			p := model.Probability(item, theta)

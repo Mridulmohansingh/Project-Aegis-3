@@ -80,10 +80,10 @@ type RedisConfig struct {
 
 // KafkaConfig holds Apache Kafka connection settings.
 type KafkaConfig struct {
-	Brokers         []string `mapstructure:"brokers" json:"brokers"`
-	GroupID         string   `mapstructure:"group_id" json:"group_id"`
-	SecurityProtocol string  `mapstructure:"security_protocol" json:"security_protocol"`
-	SASLMechanism   string   `mapstructure:"sasl_mechanism" json:"sasl_mechanism"`
+	Brokers          []string `mapstructure:"brokers" json:"brokers"`
+	GroupID          string   `mapstructure:"group_id" json:"group_id"`
+	SecurityProtocol string   `mapstructure:"security_protocol" json:"security_protocol"`
+	SASLMechanism    string   `mapstructure:"sasl_mechanism" json:"sasl_mechanism"`
 	SASLUsername     string   `mapstructure:"sasl_username" json:"sasl_username"`
 	SASLPassword     string   `mapstructure:"sasl_password" json:"-"`
 }
@@ -108,10 +108,10 @@ type VaultConfig struct {
 
 // ObservabilityConfig holds metrics and tracing settings.
 type ObservabilityConfig struct {
-	MetricsPort   int    `mapstructure:"metrics_port" json:"metrics_port"`
-	MetricsPath   string `mapstructure:"metrics_path" json:"metrics_path"`
+	MetricsPort    int    `mapstructure:"metrics_port" json:"metrics_port"`
+	MetricsPath    string `mapstructure:"metrics_path" json:"metrics_path"`
 	TracingEnabled bool   `mapstructure:"tracing_enabled" json:"tracing_enabled"`
-	OTLPEndpoint  string `mapstructure:"otlp_endpoint" json:"otlp_endpoint"`
+	OTLPEndpoint   string `mapstructure:"otlp_endpoint" json:"otlp_endpoint"`
 }
 
 // LoggingConfig holds logging settings.

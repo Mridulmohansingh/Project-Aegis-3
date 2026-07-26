@@ -35,11 +35,11 @@ import (
 
 // Service manages exam delivery operations.
 type Service struct {
-	examRepo    exam.ExamRepository
-	sessionRepo exam.SessionRepository
+	examRepo     exam.ExamRepository
+	sessionRepo  exam.SessionRepository
 	responseRepo exam.ResponseRepository
-	encryptSvc  *crypto.EncryptionService
-	logger      *zap.Logger
+	encryptSvc   *crypto.EncryptionService
+	logger       *zap.Logger
 
 	// Active session tracking (in-memory for hot path)
 	activeSessions sync.Map // sessionID → *activeSession
@@ -48,13 +48,13 @@ type Service struct {
 // activeSession tracks an in-progress exam session in memory
 // for low-latency answer capture without database roundtrips.
 type activeSession struct {
-	mu            sync.Mutex
-	session       *exam.ExamSession
-	responses     map[string]*exam.Response // itemID → response
-	lastSequence  int64
-	hmacKey       []byte // Per-session HMAC key for integrity
-	startedAt     time.Time
-	durationSecs  int
+	mu           sync.Mutex
+	session      *exam.ExamSession
+	responses    map[string]*exam.Response // itemID → response
+	lastSequence int64
+	hmacKey      []byte // Per-session HMAC key for integrity
+	startedAt    time.Time
+	durationSecs int
 }
 
 // NewService creates a new Exam Delivery Service.
@@ -130,19 +130,19 @@ func (s *Service) InitializeSession(ctx context.Context, req InitializeSessionRe
 	}
 
 	session := &exam.ExamSession{
-		ID:             uuid.New(),
-		ExamID:         req.ExamID,
-		CandidateID:    req.CandidateID,
-		PaperID:        req.PaperID,
-		CenterID:       req.CenterID,
-		Status:         exam.SessionAuthenticated,
-		ScheduledStart: time.Now().UTC(),
-		RemainingSecs:  examEntity.DurationMinutes * 60,
-		ClientIP:       req.ClientIP,
-		UserAgent:      req.UserAgent,
+		ID:               uuid.New(),
+		ExamID:           req.ExamID,
+		CandidateID:      req.CandidateID,
+		PaperID:          req.PaperID,
+		CenterID:         req.CenterID,
+		Status:           exam.SessionAuthenticated,
+		ScheduledStart:   time.Now().UTC(),
+		RemainingSecs:    examEntity.DurationMinutes * 60,
+		ClientIP:         req.ClientIP,
+		UserAgent:        req.UserAgent,
 		SessionTokenHash: tokenHash[:],
-		CreatedAt:      time.Now().UTC(),
-		UpdatedAt:      time.Now().UTC(),
+		CreatedAt:        time.Now().UTC(),
+		UpdatedAt:        time.Now().UTC(),
 	}
 
 	if err := s.sessionRepo.Create(ctx, session); err != nil {
@@ -292,10 +292,10 @@ func (s *Service) SubmitAnswer(ctx context.Context, req SubmitAnswerRequest) err
 			FirstResponseAt: &now,
 			LastModifiedAt:  &now,
 			ResponseChanges: 0,
-			ClientTimestamp:  req.ClientTimestamp,
-			ServerTimestamp:  now,
-			ClientHash:       serverHash,
-			SequenceNumber:   seqNum,
+			ClientTimestamp: req.ClientTimestamp,
+			ServerTimestamp: now,
+			ClientHash:      serverHash,
+			SequenceNumber:  seqNum,
 		}
 		active.responses[itemKey] = response
 	}
@@ -417,17 +417,17 @@ func (s *Service) GetRemainingTime(sessionID uuid.UUID) (int, error) {
 
 // SessionSummary provides a post-exam summary for the candidate.
 type SessionSummary struct {
-	SessionID       uuid.UUID     `json:"session_id"`
-	ExamID          uuid.UUID     `json:"exam_id"`
-	CandidateID     uuid.UUID     `json:"candidate_id"`
-	Status          string        `json:"status"`
-	StartedAt       *time.Time    `json:"started_at"`
-	CompletedAt     *time.Time    `json:"completed_at"`
-	DurationSecs    int           `json:"duration_secs"`
-	TotalQuestions  int           `json:"total_questions"`
-	Answered        int           `json:"answered"`
-	Unanswered      int           `json:"unanswered"`
-	MarkedForReview int           `json:"marked_for_review"`
+	SessionID        uuid.UUID        `json:"session_id"`
+	ExamID           uuid.UUID        `json:"exam_id"`
+	CandidateID      uuid.UUID        `json:"candidate_id"`
+	Status           string           `json:"status"`
+	StartedAt        *time.Time       `json:"started_at"`
+	CompletedAt      *time.Time       `json:"completed_at"`
+	DurationSecs     int              `json:"duration_secs"`
+	TotalQuestions   int              `json:"total_questions"`
+	Answered         int              `json:"answered"`
+	Unanswered       int              `json:"unanswered"`
+	MarkedForReview  int              `json:"marked_for_review"`
 	SectionSummaries []SectionSummary `json:"section_summaries"`
 }
 
@@ -481,12 +481,12 @@ func (s *Service) computeResponseHMAC(key []byte, itemID uuid.UUID, sequence int
 
 func (s *Service) buildSummary(active *activeSession) *SessionSummary {
 	summary := &SessionSummary{
-		SessionID:    active.session.ID,
-		ExamID:       active.session.ExamID,
-		CandidateID:  active.session.CandidateID,
-		Status:       string(active.session.Status),
-		StartedAt:    active.session.ActualStart,
-		CompletedAt:  active.session.ActualEnd,
+		SessionID:   active.session.ID,
+		ExamID:      active.session.ExamID,
+		CandidateID: active.session.CandidateID,
+		Status:      string(active.session.Status),
+		StartedAt:   active.session.ActualStart,
+		CompletedAt: active.session.ActualEnd,
 	}
 
 	if active.session.ActualStart != nil && active.session.ActualEnd != nil {
@@ -537,7 +537,9 @@ func NewDeliveryHandler(service *Service, logger *zap.Logger) *DeliveryHandler {
 }
 
 // RegisterRoutes registers delivery endpoints on an HTTP mux.
-func (h *DeliveryHandler) RegisterRoutes(mux interface{ HandleFunc(string, func(w interface{}, r interface{})) }) {
+func (h *DeliveryHandler) RegisterRoutes(mux interface {
+	HandleFunc(string, func(w interface{}, r interface{}))
+}) {
 	// Routes would be:
 	// POST   /api/v1/sessions                 → InitializeSession
 	// POST   /api/v1/sessions/{id}/start      → StartSession

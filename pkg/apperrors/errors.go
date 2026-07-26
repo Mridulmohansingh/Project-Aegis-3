@@ -46,17 +46,17 @@ const (
 
 // codeToHTTPStatus maps error codes to HTTP status codes.
 var codeToHTTPStatus = map[ErrorCode]int{
-	ErrCodeNotFound:              http.StatusNotFound,
-	ErrCodeConflict:              http.StatusConflict,
-	ErrCodeValidation:            http.StatusUnprocessableEntity,
-	ErrCodeUnauthorized:          http.StatusUnauthorized,
-	ErrCodeForbidden:             http.StatusForbidden,
-	ErrCodeInternal:              http.StatusInternalServerError,
-	ErrCodeBadRequest:            http.StatusBadRequest,
-	ErrCodeTimeout:               http.StatusGatewayTimeout,
-	ErrCodeUnavailable:           http.StatusServiceUnavailable,
-	ErrCodeRateLimited:           http.StatusTooManyRequests,
-	ErrCodePreconditionFailed:    http.StatusPreconditionFailed,
+	ErrCodeNotFound:               http.StatusNotFound,
+	ErrCodeConflict:               http.StatusConflict,
+	ErrCodeValidation:             http.StatusUnprocessableEntity,
+	ErrCodeUnauthorized:           http.StatusUnauthorized,
+	ErrCodeForbidden:              http.StatusForbidden,
+	ErrCodeInternal:               http.StatusInternalServerError,
+	ErrCodeBadRequest:             http.StatusBadRequest,
+	ErrCodeTimeout:                http.StatusGatewayTimeout,
+	ErrCodeUnavailable:            http.StatusServiceUnavailable,
+	ErrCodeRateLimited:            http.StatusTooManyRequests,
+	ErrCodePreconditionFailed:     http.StatusPreconditionFailed,
 	ErrCodeInvalidStateTransition: http.StatusConflict,
 }
 
@@ -134,12 +134,12 @@ type ProblemDetail struct {
 // ToProblemDetail converts an AppError to RFC 7807 format.
 func (e *AppError) ToProblemDetail(instance string) ProblemDetail {
 	return ProblemDetail{
-		Type:   fmt.Sprintf("https://aegis.gov.in/errors/%s", e.Code),
-		Title:  http.StatusText(e.HTTPStatus),
-		Status: e.HTTPStatus,
-		Detail: e.Message,
-		Code:   e.Code,
-		Errors: e.Details,
+		Type:     fmt.Sprintf("https://aegis.gov.in/errors/%s", e.Code),
+		Title:    http.StatusText(e.HTTPStatus),
+		Status:   e.HTTPStatus,
+		Detail:   e.Message,
+		Code:     e.Code,
+		Errors:   e.Details,
 		Instance: instance,
 	}
 }

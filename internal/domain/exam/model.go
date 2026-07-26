@@ -24,10 +24,10 @@ import (
 type ExamType string
 
 const (
-	ExamTypeFixedForm   ExamType = "FIXED_FORM"      // All candidates get the same (or parallel) fixed form
-	ExamTypeLinearOnFly ExamType = "LINEAR_ON_FLY"    // Unique form assembled per candidate from item pool
-	ExamTypeCAT         ExamType = "CAT"              // Computerized Adaptive Testing
-	ExamTypeMultiStage  ExamType = "MULTI_STAGE"      // Multi-Stage Adaptive Testing (MST)
+	ExamTypeFixedForm   ExamType = "FIXED_FORM"    // All candidates get the same (or parallel) fixed form
+	ExamTypeLinearOnFly ExamType = "LINEAR_ON_FLY" // Unique form assembled per candidate from item pool
+	ExamTypeCAT         ExamType = "CAT"           // Computerized Adaptive Testing
+	ExamTypeMultiStage  ExamType = "MULTI_STAGE"   // Multi-Stage Adaptive Testing (MST)
 )
 
 func (t ExamType) IsValid() bool {
@@ -76,21 +76,21 @@ func (s ExamStatus) CanTransitionTo(target ExamStatus) bool {
 type SessionStatus string
 
 const (
-	SessionInitialized  SessionStatus = "INITIALIZED"
+	SessionInitialized   SessionStatus = "INITIALIZED"
 	SessionAuthenticated SessionStatus = "AUTHENTICATED"
-	SessionInProgress   SessionStatus = "IN_PROGRESS"
-	SessionPaused       SessionStatus = "PAUSED"
-	SessionCompleted    SessionStatus = "COMPLETED"
-	SessionTerminated   SessionStatus = "TERMINATED"
-	SessionTimedOut     SessionStatus = "TIMED_OUT"
+	SessionInProgress    SessionStatus = "IN_PROGRESS"
+	SessionPaused        SessionStatus = "PAUSED"
+	SessionCompleted     SessionStatus = "COMPLETED"
+	SessionTerminated    SessionStatus = "TERMINATED"
+	SessionTimedOut      SessionStatus = "TIMED_OUT"
 )
 
 // NavigationType defines how candidates can navigate within a section.
 type NavigationType string
 
 const (
-	NavSequential   NavigationType = "SEQUENTIAL"     // Must answer in order
-	NavFree         NavigationType = "FREE"           // Can jump to any question
+	NavSequential    NavigationType = "SEQUENTIAL"     // Must answer in order
+	NavFree          NavigationType = "FREE"           // Can jump to any question
 	NavSectionLocked NavigationType = "SECTION_LOCKED" // Free within section, can't go back to previous sections
 )
 
@@ -172,33 +172,33 @@ func (e *Exam) TransitionTo(newStatus ExamStatus, actorID uuid.UUID) error {
 // ExamSession tracks a single candidate's exam interaction.
 // All timing is server-authoritative to prevent client-side manipulation.
 type ExamSession struct {
-	ID               uuid.UUID     `json:"id" db:"id"`
-	ExamID           uuid.UUID     `json:"exam_id" db:"exam_id"`
-	CandidateID      uuid.UUID     `json:"candidate_id" db:"candidate_id"`
-	PaperID          uuid.UUID     `json:"paper_id" db:"paper_id"`
-	CenterID         *uuid.UUID    `json:"center_id,omitempty" db:"center_id"`
-	Status           SessionStatus `json:"status" db:"status"`
+	ID          uuid.UUID     `json:"id" db:"id"`
+	ExamID      uuid.UUID     `json:"exam_id" db:"exam_id"`
+	CandidateID uuid.UUID     `json:"candidate_id" db:"candidate_id"`
+	PaperID     uuid.UUID     `json:"paper_id" db:"paper_id"`
+	CenterID    *uuid.UUID    `json:"center_id,omitempty" db:"center_id"`
+	Status      SessionStatus `json:"status" db:"status"`
 
 	// Timing (all server-authoritative)
-	ScheduledStart   time.Time  `json:"scheduled_start" db:"scheduled_start"`
-	ActualStart      *time.Time `json:"actual_start,omitempty" db:"actual_start"`
-	ActualEnd        *time.Time `json:"actual_end,omitempty" db:"actual_end"`
-	RemainingSecs    int        `json:"remaining_secs" db:"remaining_secs"`
-	PauseCount       int        `json:"pause_count" db:"pause_count"`
-	TotalPauseSecs   int        `json:"total_pause_secs" db:"total_pause_secs"`
+	ScheduledStart time.Time  `json:"scheduled_start" db:"scheduled_start"`
+	ActualStart    *time.Time `json:"actual_start,omitempty" db:"actual_start"`
+	ActualEnd      *time.Time `json:"actual_end,omitempty" db:"actual_end"`
+	RemainingSecs  int        `json:"remaining_secs" db:"remaining_secs"`
+	PauseCount     int        `json:"pause_count" db:"pause_count"`
+	TotalPauseSecs int        `json:"total_pause_secs" db:"total_pause_secs"`
 
 	// Security
-	ClientIP         string `json:"client_ip" db:"client_ip"`
-	UserAgent        string `json:"user_agent" db:"user_agent"`
+	ClientIP          string `json:"client_ip" db:"client_ip"`
+	UserAgent         string `json:"user_agent" db:"user_agent"`
 	DeviceFingerprint []byte `json:"-" db:"device_fingerprint"`
-	SessionTokenHash []byte `json:"-" db:"session_token_hash"`
+	SessionTokenHash  []byte `json:"-" db:"session_token_hash"`
 
 	// Integrity
-	TotalResponses   int   `json:"total_responses" db:"total_responses"`
-	LastSequence     int64 `json:"last_sequence" db:"last_sequence"`
+	TotalResponses int   `json:"total_responses" db:"total_responses"`
+	LastSequence   int64 `json:"last_sequence" db:"last_sequence"`
 
-	CreatedAt        time.Time `json:"created_at" db:"created_at"`
-	UpdatedAt        time.Time `json:"updated_at" db:"updated_at"`
+	CreatedAt time.Time `json:"created_at" db:"created_at"`
+	UpdatedAt time.Time `json:"updated_at" db:"updated_at"`
 }
 
 // Start transitions the session to IN_PROGRESS and records the start time.
@@ -255,24 +255,24 @@ func (s *ExamSession) TimeOut() {
 
 // Response captures a single answer submission from a candidate.
 type Response struct {
-	ID              uuid.UUID  `json:"id" db:"id"`
-	ExamID          uuid.UUID  `json:"exam_id" db:"exam_id"`
-	CandidateID     uuid.UUID  `json:"candidate_id" db:"candidate_id"`
-	SessionID       uuid.UUID  `json:"session_id" db:"session_id"`
-	PaperID         uuid.UUID  `json:"paper_id" db:"paper_id"`
-	ItemID          uuid.UUID  `json:"item_id" db:"item_id"`
-	SectionIndex    int        `json:"section_index" db:"section_index"`
-	QuestionIndex   int        `json:"question_index" db:"question_index"`
+	ID            uuid.UUID `json:"id" db:"id"`
+	ExamID        uuid.UUID `json:"exam_id" db:"exam_id"`
+	CandidateID   uuid.UUID `json:"candidate_id" db:"candidate_id"`
+	SessionID     uuid.UUID `json:"session_id" db:"session_id"`
+	PaperID       uuid.UUID `json:"paper_id" db:"paper_id"`
+	ItemID        uuid.UUID `json:"item_id" db:"item_id"`
+	SectionIndex  int       `json:"section_index" db:"section_index"`
+	QuestionIndex int       `json:"question_index" db:"question_index"`
 
 	// Response data
-	SelectedOption  *int       `json:"selected_option,omitempty" db:"selected_option"`
-	SelectedOptions []int      `json:"selected_options,omitempty" db:"selected_options"`
-	IntegerAnswer   *int       `json:"integer_answer,omitempty" db:"integer_answer"`
-	TextAnswer      []byte     `json:"-" db:"text_answer"` // Encrypted
-	IsMarked        bool       `json:"is_marked" db:"is_marked"`
-	IsVisited       bool       `json:"is_visited" db:"is_visited"`
-	VisitCount      int        `json:"visit_count" db:"visit_count"`
-	TimeSpentMs     int        `json:"time_spent_ms" db:"time_spent_ms"`
+	SelectedOption  *int   `json:"selected_option,omitempty" db:"selected_option"`
+	SelectedOptions []int  `json:"selected_options,omitempty" db:"selected_options"`
+	IntegerAnswer   *int   `json:"integer_answer,omitempty" db:"integer_answer"`
+	TextAnswer      []byte `json:"-" db:"text_answer"` // Encrypted
+	IsMarked        bool   `json:"is_marked" db:"is_marked"`
+	IsVisited       bool   `json:"is_visited" db:"is_visited"`
+	VisitCount      int    `json:"visit_count" db:"visit_count"`
+	TimeSpentMs     int    `json:"time_spent_ms" db:"time_spent_ms"`
 
 	// Timeline
 	FirstResponseAt *time.Time `json:"first_response_at,omitempty" db:"first_response_at"`

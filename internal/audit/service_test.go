@@ -74,19 +74,19 @@ func TestAppendAndRetrieve(t *testing.T) {
 	repo := &MockRepository{}
 	signer := &MockSigner{}
 	logger := zap.NewNop()
-	
+
 	svc, err := audit.NewService(repo, signer, logger)
 	assert.NoError(t, err)
-	
+
 	entry := &audit.Entry{
 		EventType: "TEST_EVENT",
 		ActorType: audit.ActorTypeUser,
 		Action:    "CREATE",
 	}
-	
+
 	err = svc.Append(context.Background(), entry)
 	assert.NoError(t, err)
-	
+
 	latest, err := repo.GetLatest()
 	assert.NoError(t, err)
 	assert.Equal(t, "TEST_EVENT", latest.EventType)
@@ -97,16 +97,16 @@ func TestHashChaining(t *testing.T) {
 	repo := &MockRepository{}
 	signer := &MockSigner{}
 	logger := zap.NewNop()
-	
+
 	svc, err := audit.NewService(repo, signer, logger)
 	assert.NoError(t, err)
-	
+
 	e1 := &audit.Entry{EventType: "E1"}
 	e2 := &audit.Entry{EventType: "E2"}
-	
+
 	_ = svc.Append(context.Background(), e1)
 	_ = svc.Append(context.Background(), e2)
-	
+
 	assert.Equal(t, e1.EntryHash, e2.PreviousHash)
 }
 
@@ -114,14 +114,14 @@ func TestVerifyChain(t *testing.T) {
 	repo := &MockRepository{}
 	signer := &MockSigner{}
 	logger := zap.NewNop()
-	
+
 	svc, err := audit.NewService(repo, signer, logger)
 	assert.NoError(t, err)
-	
+
 	for i := 0; i < 5; i++ {
 		_ = svc.Append(context.Background(), &audit.Entry{EventType: "TEST"})
 	}
-	
+
 	report, err := svc.VerifyChain(context.Background(), 1, 5)
 	assert.NoError(t, err)
 	assert.True(t, report.Verified)
@@ -132,19 +132,19 @@ func TestVerifyChainTampered(t *testing.T) {
 	repo := &MockRepository{}
 	signer := &MockSigner{}
 	logger := zap.NewNop()
-	
+
 	svc, err := audit.NewService(repo, signer, logger)
 	assert.NoError(t, err)
-	
+
 	for i := 0; i < 5; i++ {
 		_ = svc.Append(context.Background(), &audit.Entry{EventType: "TEST"})
 	}
-	
+
 	// Tamper with entry 3
 	repo.mu.Lock()
 	repo.entries[2].Action = "TAMPERED"
 	repo.mu.Unlock()
-	
+
 	report, err := svc.VerifyChain(context.Background(), 1, 5)
 	assert.NoError(t, err)
 	assert.False(t, report.Verified)
@@ -155,15 +155,15 @@ func TestCheckpoint(t *testing.T) {
 	repo := &MockRepository{}
 	signer := &MockSigner{}
 	logger := zap.NewNop()
-	
+
 	svc, err := audit.NewService(repo, signer, logger)
 	assert.NoError(t, err)
-	
+
 	_ = svc.Append(context.Background(), &audit.Entry{EventType: "TEST"})
-	
+
 	err = svc.Checkpoint(context.Background())
 	assert.NoError(t, err)
-	
+
 	latest, _ := repo.GetLatest()
 	assert.Equal(t, "SYSTEM_CHECKPOINT", latest.EventType)
 	assert.Equal(t, []byte("mock-signature"), latest.CheckpointSig)
@@ -173,10 +173,10 @@ func TestConcurrentAppends(t *testing.T) {
 	repo := &MockRepository{}
 	signer := &MockSigner{}
 	logger := zap.NewNop()
-	
+
 	svc, err := audit.NewService(repo, signer, logger)
 	assert.NoError(t, err)
-	
+
 	var wg sync.WaitGroup
 	for i := 0; i < 100; i++ {
 		wg.Add(1)
@@ -186,7 +186,7 @@ func TestConcurrentAppends(t *testing.T) {
 		}(i)
 	}
 	wg.Wait()
-	
+
 	report, err := svc.VerifyChain(context.Background(), 1, 100)
 	assert.NoError(t, err)
 	assert.True(t, report.Verified)

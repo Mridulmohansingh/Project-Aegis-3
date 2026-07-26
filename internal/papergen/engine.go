@@ -77,7 +77,6 @@ type Solution struct {
 type Engine struct {
 	itemRepo  item.ItemRepository
 	paperRepo paper.PaperRepository
-	enemyRepo item.EnemyRepository
 	cryptoSvc CryptoService
 	logger    *zap.Logger
 }
@@ -107,14 +106,12 @@ type GenerationResult struct {
 func NewEngine(
 	itemRepo item.ItemRepository,
 	paperRepo paper.PaperRepository,
-	enemyRepo item.EnemyRepository,
 	cryptoSvc CryptoService,
 	logger *zap.Logger,
 ) *Engine {
 	return &Engine{
 		itemRepo:  itemRepo,
 		paperRepo: paperRepo,
-		enemyRepo: enemyRepo,
 		cryptoSvc: cryptoSvc,
 		logger:    logger,
 	}
@@ -124,14 +121,36 @@ func NewEngine(
 func (e *Engine) Generate(ctx context.Context, req GenerationRequest) (*GenerationResult, error) {
 	startTime := time.Now()
 
-	items, err := e.itemRepo.GetEligibleForPaperGeneration(ctx, req.ExamID)
+	// Get eligible items using organization and subject from blueprint
+	items, err := e.itemRepo.GetEligibleForPaperGeneration(
+		ctx,
+		req.Blueprint.OrganizationID,
+		req.Blueprint.SubjectID,
+		req.Blueprint.Constraints.MaxExposureIndex,
+	)
 	if err != nil {
 		return nil, err
 	}
 
-	enemies, err := e.enemyRepo.GetEnemiesForExam(ctx, req.ExamID)
-	if err != nil {
-		return nil, err
+	// Fetch enemies for all selected items
+	var enemies []item.ItemEnemy
+	seen := make(map[string]bool)
+	for _, itm := range items {
+		itmEnemies, err := e.itemRepo.GetEnemies(ctx, itm.ID)
+		if err != nil {
+			return nil, err
+		}
+		for _, enemy := range itmEnemies {
+			idA, idB := enemy.ItemAID, enemy.ItemBID
+			if idA.String() > idB.String() {
+				idA, idB = idB, idA
+			}
+			key := idA.String() + "_" + idB.String()
+			if !seen[key] {
+				seen[key] = true
+				enemies = append(enemies, enemy)
+			}
+		}
 	}
 
 	res := &GenerationResult{
@@ -196,7 +215,7 @@ func (e *Engine) Generate(ctx context.Context, req GenerationRequest) (*Generati
 		p.GenerationLog = paper.GenerationLog{
 			SolverName:        "AEGIS-MIP-v1",
 			SolveTimeMs:       sol.SolveTimeMs,
-			OptimalityGap:     0, 
+			OptimalityGap:     0,
 			Iterations:        sol.Iterations,
 			ObjectiveValue:    sol.ObjectiveVal,
 			ItemPoolSize:      len(items),
@@ -239,16 +258,22 @@ func ComputeProfile(items []*item.Item) paper.PaperProfile {
 	thetas := []float64{-3, -2, -1, 0, 1, 2, 3}
 
 	for _, itm := range items {
-		sumB += itm.IRTB
+		irtA := 1.0
+		irtB := 0.0
+		if itm.IRTParams != nil {
+			irtA = itm.IRTParams.A
+			irtB = itm.IRTParams.B
+		}
+		sumB += irtB
 		prof.TotalTimeEstSecs += itm.EstimatedTimeSecs
-		prof.DifficultyDist[itm.DifficultyLevel]++
-		prof.CognitiveDist[itm.CognitiveLevel]++
-		prof.ChapterDist[itm.ChapterID]++
+		prof.DifficultyDist[string(itm.DifficultyLevel)]++
+		prof.CognitiveDist[string(itm.CognitiveLevel)]++
+		prof.ChapterDist[itm.ChapterID.String()]++
 
 		for _, theta := range thetas {
-			p := 1.0 / (1.0 + math.Exp(-itm.IRTA*(theta-itm.IRTB)))
+			p := 1.0 / (1.0 + math.Exp(-irtA*(theta-irtB)))
 			q := 1.0 - p
-			info := itm.IRTA * itm.IRTA * p * q
+			info := irtA * irtA * p * q
 			prof.TestInformation[theta] += info
 		}
 	}
@@ -257,7 +282,11 @@ func ComputeProfile(items []*item.Item) paper.PaperProfile {
 		prof.MeanDifficulty = sumB / float64(len(items))
 		var sumSq float64
 		for _, itm := range items {
-			diff := itm.IRTB - prof.MeanDifficulty
+			irtB := 0.0
+			if itm.IRTParams != nil {
+				irtB = itm.IRTParams.B
+			}
+			diff := irtB - prof.MeanDifficulty
 			sumSq += diff * diff
 		}
 		prof.StdDifficulty = math.Sqrt(sumSq / float64(len(items)))
@@ -381,10 +410,10 @@ func (m *MIPModel) Solve(maxTimeSecs int) (*Solution, error) {
 
 // Tableau structures for Revised Simplex
 type tableau struct {
-	m, n    int
-	mat     [][]float64
-	basis   []int
-	nonbas  []int
+	m, n   int
+	mat    [][]float64
+	basis  []int
+	nonbas []int
 }
 
 // solveLP uses a two-phase revised simplex method
@@ -392,7 +421,7 @@ func (model *MIPModel) solveLP(fixedVars map[int]float64) (*Solution, error) {
 	// Standard form conversion
 	numVars := len(model.Variables)
 	numCons := len(model.Constraints)
-	
+
 	// Create map for variable indices
 	varIdx := make(map[int]int)
 	for i, v := range model.Variables {
@@ -405,16 +434,16 @@ func (model *MIPModel) solveLP(fixedVars map[int]float64) (*Solution, error) {
 		if c.Type == LEQ || c.Type == GEQ {
 			numCols++
 		}
-		// In full simplex we'd add artificial vars for GEQ and EQ, 
+		// In full simplex we'd add artificial vars for GEQ and EQ,
 		// but we'll use a simplified bounds approach for this exercise
 	}
 
 	tab := &tableau{
-		m: numCons,
-		n: numCols,
+		m:   numCons,
+		n:   numCols,
 		mat: make([][]float64, numCons+1),
 	}
-	
+
 	for i := range tab.mat {
 		tab.mat[i] = make([]float64, numCols+1)
 	}
@@ -508,9 +537,9 @@ func (model *MIPModel) solveLP(fixedVars map[int]float64) (*Solution, error) {
 		Values: make(map[int]float64),
 		Status: StatusOptimal,
 	}
-	
+
 	// Extract basic variables
-	for i, v := range model.Variables {
+	for _, v := range model.Variables {
 		if val, fixed := fixedVars[v.Index]; fixed {
 			sol.Values[v.Index] = val
 		} else {
@@ -529,15 +558,19 @@ func (model *MIPModel) solveLP(fixedVars map[int]float64) (*Solution, error) {
 			if isBasic && basicRow != -1 {
 				val := tab.mat[basicRow][numCols]
 				// Respect bounds
-				if val > v.Upper { val = v.Upper }
-				if val < v.Lower { val = v.Lower }
+				if val > v.Upper {
+					val = v.Upper
+				}
+				if val < v.Lower {
+					val = v.Lower
+				}
 				sol.Values[v.Index] = val
 			} else {
 				sol.Values[v.Index] = v.Lower
 			}
 		}
 	}
-	
+
 	obj := tab.mat[numCons][numCols]
 	// Adjust objective for fixed variables
 	for _, v := range model.Variables {
@@ -545,7 +578,7 @@ func (model *MIPModel) solveLP(fixedVars map[int]float64) (*Solution, error) {
 			obj += v.ObjCoeff * val
 		}
 	}
-	
+
 	if model.Objective == Maximize {
 		sol.ObjectiveVal = -obj
 	} else {

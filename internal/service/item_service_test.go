@@ -4,11 +4,9 @@ import (
 	"context"
 	"crypto/ed25519"
 	"crypto/rand"
-	"encoding/json"
 	"errors"
 	"sync"
 	"testing"
-	"time"
 
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
@@ -150,24 +148,26 @@ func (m *MockKeyManager) GetVerificationKey(keyID string) (ed25519.PublicKey, er
 // MockAuditRepo implements audit.Repository
 type MockAuditRepo struct{}
 
-func (m *MockAuditRepo) Insert(entry *audit.Entry) error { return nil }
-func (m *MockAuditRepo) GetByID(id int64) (*audit.Entry, error) { return nil, nil }
+func (m *MockAuditRepo) Insert(entry *audit.Entry) error                   { return nil }
+func (m *MockAuditRepo) GetByID(id int64) (*audit.Entry, error)            { return nil, nil }
 func (m *MockAuditRepo) GetRange(start, end int64) ([]*audit.Entry, error) { return nil, nil }
-func (m *MockAuditRepo) GetLatest() (*audit.Entry, error) { return nil, nil }
-func (m *MockAuditRepo) Query(f audit.AuditFilter, c string, l int) ([]*audit.Entry, string, error) { return nil, "", nil }
+func (m *MockAuditRepo) GetLatest() (*audit.Entry, error)                  { return nil, nil }
+func (m *MockAuditRepo) Query(f audit.AuditFilter, c string, l int) ([]*audit.Entry, string, error) {
+	return nil, "", nil
+}
 
 // MockAuditSigner implements audit.Signer
 type MockAuditSigner struct{}
 
-func (m *MockAuditSigner) Sign(data []byte) ([]byte, error) { return []byte("sig"), nil }
+func (m *MockAuditSigner) Sign(data []byte) ([]byte, error)            { return []byte("sig"), nil }
 func (m *MockAuditSigner) Verify(data, signature []byte) (bool, error) { return true, nil }
 
 func setupItemService(t *testing.T) (*service.ItemService, *MockItemRepository) {
 	repo := NewMockItemRepository()
 	km := NewMockKeyManager()
-	
+
 	logger := zap.NewNop()
-	
+
 	auditRepo := &MockAuditRepo{}
 	auditSigner := &MockAuditSigner{}
 	auditSvc, err := audit.NewService(auditRepo, auditSigner, logger)

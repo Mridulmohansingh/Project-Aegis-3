@@ -112,7 +112,7 @@ func (mh *MantelHaenszel) DetectDIF(
 		if denAlpha > 0 {
 			alphaMH = numAlpha / denAlpha
 		}
-		
+
 		deltaMH := -2.35 * math.Log(alphaMH)
 
 		chiSquareMH := 0.0

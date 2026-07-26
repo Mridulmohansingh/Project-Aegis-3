@@ -24,16 +24,16 @@ import (
 // Blueprint is the aggregate root defining test assembly constraints.
 type Blueprint struct {
 	ID             uuid.UUID            `json:"id" db:"id"`
-	OrganizationID uuid.UUID           `json:"organization_id" db:"organization_id"`
-	Name           string              `json:"name" db:"name"`
-	SubjectID      uuid.UUID           `json:"subject_id" db:"subject_id"`
-	TotalItems     int                 `json:"total_items" db:"total_items"`
+	OrganizationID uuid.UUID            `json:"organization_id" db:"organization_id"`
+	Name           string               `json:"name" db:"name"`
+	SubjectID      uuid.UUID            `json:"subject_id" db:"subject_id"`
+	TotalItems     int                  `json:"total_items" db:"total_items"`
 	Constraints    BlueprintConstraints `json:"constraints" db:"constraints"`
-	Version        int                 `json:"version" db:"version"`
-	CreatedAt      time.Time           `json:"created_at" db:"created_at"`
-	CreatedBy      uuid.UUID           `json:"created_by" db:"created_by"`
-	UpdatedAt      time.Time           `json:"updated_at" db:"updated_at"`
-	UpdatedBy      uuid.UUID           `json:"updated_by" db:"updated_by"`
+	Version        int                  `json:"version" db:"version"`
+	CreatedAt      time.Time            `json:"created_at" db:"created_at"`
+	CreatedBy      uuid.UUID            `json:"created_by" db:"created_by"`
+	UpdatedAt      time.Time            `json:"updated_at" db:"updated_at"`
+	UpdatedBy      uuid.UUID            `json:"updated_by" db:"updated_by"`
 }
 
 // BlueprintConstraints holds all constraint specifications for test assembly.

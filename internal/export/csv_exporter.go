@@ -50,9 +50,10 @@ func NewCSVExporter(outputDir string, logger *zap.Logger) *CSVExporter {
 // ExportItemBank exports the complete question bank with IRT parameters.
 //
 // Columns: item_id, external_id, subject, chapter, topic, item_type, status,
-//          difficulty_level, cognitive_level, irt_a, irt_b, irt_c,
-//          p_value, discrimination_index, point_biserial,
-//          exposure_count, estimated_time_secs, created_at, updated_at
+//
+//	difficulty_level, cognitive_level, irt_a, irt_b, irt_c,
+//	p_value, discrimination_index, point_biserial,
+//	exposure_count, estimated_time_secs, created_at, updated_at
 //
 // Use in R:    items <- read.csv("item_bank.csv")
 // Use in Excel: Open directly
@@ -103,7 +104,7 @@ func (e *CSVExporter) ExportItemBank(items []*item.Item, filename string) (strin
 				fmtFloat(itm.IRTParams.A),
 				fmtFloat(itm.IRTParams.B),
 				fmtFloat(itm.IRTParams.C),
-				fmtFloat(itm.IRTParams.Information),
+				fmtFloat(itm.IRTParams.InformationAtZero),
 				strconv.Itoa(itm.IRTParams.CalibrationSampleSize),
 			)
 		} else {
@@ -111,16 +112,20 @@ func (e *CSVExporter) ExportItemBank(items []*item.Item, filename string) (strin
 		}
 
 		// Classical statistics
-		row = append(row,
-			fmtFloatPtr(itm.ClassicalStats.PValue),
-			fmtFloatPtr(itm.ClassicalStats.DiscriminationIndex),
-			fmtFloatPtr(itm.ClassicalStats.PointBiserial),
-		)
+		if itm.ClassicalStats != nil {
+			row = append(row,
+				fmtFloat(itm.ClassicalStats.PValue),
+				fmtFloat(itm.ClassicalStats.DiscriminationIndex),
+				fmtFloat(itm.ClassicalStats.PointBiserial),
+			)
+		} else {
+			row = append(row, "", "", "")
+		}
 
 		// Exposure
 		row = append(row,
 			strconv.Itoa(itm.Exposure.ExposureCount),
-			fmtFloat(itm.Exposure.ExposureRate),
+			fmtFloat(itm.Exposure.ExposureIndex),
 		)
 
 		// Metadata
@@ -157,7 +162,8 @@ func (e *CSVExporter) ExportItemBank(items []*item.Item, filename string) (strin
 // Columns: candidate_id, item_1, item_2, ..., item_n, total_score, time_total_ms
 //
 // Use in R:    responses <- read.csv("response_matrix.csv", na.strings="NA")
-//              library(mirt); mod <- mirt(responses[,2:76], 1, itemtype='3PL')
+//
+//	library(mirt); mod <- mirt(responses[,2:76], 1, itemtype='3PL')
 func (e *CSVExporter) ExportResponseMatrix(
 	examID uuid.UUID,
 	itemIDs []uuid.UUID,
@@ -250,12 +256,14 @@ func (e *CSVExporter) ExportResponseMatrix(
 // ExportClassicalStats exports CTT statistics per item.
 //
 // Columns: item_id, total_responses, correct_count, incorrect_count, omitted_count,
-//          p_value, discrimination_index, point_biserial, mean_time_ms,
-//          flagged, flag_reasons, distractor_a_pct, distractor_b_pct, distractor_c_pct, distractor_d_pct
+//
+//	p_value, discrimination_index, point_biserial, mean_time_ms,
+//	flagged, flag_reasons, distractor_a_pct, distractor_b_pct, distractor_c_pct, distractor_d_pct
 //
 // Use in R:    stats <- read.csv("classical_stats.csv")
-//              hist(stats$p_value, main="Item Difficulty Distribution")
-//              plot(stats$p_value, stats$discrimination_index, xlab="P-value", ylab="Discrimination")
+//
+//	hist(stats$p_value, main="Item Difficulty Distribution")
+//	plot(stats$p_value, stats$discrimination_index, xlab="P-value", ylab="Discrimination")
 func (e *CSVExporter) ExportClassicalStats(stats []analysis.ClassicalItemStats, filename string) (string, error) {
 	path := filepath.Join(e.outputDir, filename)
 	f, err := os.Create(path)
@@ -278,7 +286,9 @@ func (e *CSVExporter) ExportClassicalStats(stats []analysis.ClassicalItemStats, 
 	for _, s := range stats {
 		flagReasons := ""
 		for i, r := range s.FlagReasons {
-			if i > 0 { flagReasons += "; " }
+			if i > 0 {
+				flagReasons += "; "
+			}
 			flagReasons += r
 		}
 
@@ -313,7 +323,8 @@ func (e *CSVExporter) ExportClassicalStats(stats []analysis.ClassicalItemStats, 
 // ExportCandidateScores exports all candidate scores for an exam.
 //
 // Columns: candidate_id, exam_id, raw_score, max_possible, percentage,
-//          theta_mle, theta_eap, theta_se, scaled_score, percentile, rank
+//
+//	theta_mle, theta_eap, theta_se, scaled_score, percentile, rank
 //
 // Use in Power BI: Load → create visualizations on score distributions
 // Use in Tableau: Connect → drag percentile to columns, count to rows
@@ -401,12 +412,14 @@ type CandidateScore struct {
 // ExportDIFAnalysis exports DIF detection results.
 //
 // Columns: item_id, external_id, grouping_variable, delta_mh, se_delta_mh,
-//          chi_square, p_value, ets_category, reference_p, focal_p,
-//          reference_n, focal_n, flagged
+//
+//	chi_square, p_value, ets_category, reference_p, focal_p,
+//	reference_n, focal_n, flagged
 //
 // Use in R:    dif <- read.csv("dif_analysis.csv")
-//              library(ggplot2)
-//              ggplot(dif, aes(x=delta_mh, fill=ets_category)) + geom_histogram()
+//
+//	library(ggplot2)
+//	ggplot(dif, aes(x=delta_mh, fill=ets_category)) + geom_histogram()
 func (e *CSVExporter) ExportDIFAnalysis(results []DIFResult, filename string) (string, error) {
 	path := filepath.Join(e.outputDir, filename)
 	f, err := os.Create(path)
@@ -467,7 +480,8 @@ type DIFResult struct {
 // ExportPersonFit exports person-fit analysis results.
 //
 // Columns: candidate_id, session_id, theta, lz_statistic, lz_p_value,
-//          flagged, flag_reason, total_items, correct_count
+//
+//	flagged, flag_reason, total_items, correct_count
 func (e *CSVExporter) ExportPersonFit(results []PersonFitResult, filename string) (string, error) {
 	path := filepath.Join(e.outputDir, filename)
 	f, err := os.Create(path)
@@ -524,8 +538,9 @@ type PersonFitResult struct {
 // ExportExamSummary exports exam-level aggregate statistics.
 //
 // Columns: exam_id, exam_code, total_appeared, mean_raw, median_raw, std_raw,
-//          min_raw, max_raw, skewness, kurtosis, cronbach_alpha,
-//          mean_theta, std_theta, p5, p10, p25, p50, p75, p90, p95, p99
+//
+//	min_raw, max_raw, skewness, kurtosis, cronbach_alpha,
+//	mean_theta, std_theta, p5, p10, p25, p50, p75, p90, p95, p99
 func (e *CSVExporter) ExportExamSummary(summaries []ExamSummaryRow, filename string) (string, error) {
 	path := filepath.Join(e.outputDir, filename)
 	f, err := os.Create(path)
@@ -597,15 +612,16 @@ type ExamSummaryRow struct {
 // Returns the list of generated file paths.
 //
 // Directory structure:
-//   exports/
-//   └── JEE-MAIN-2026-JAN/
-//       ├── item_bank.csv
-//       ├── response_matrix.csv
-//       ├── classical_stats.csv
-//       ├── candidate_scores.csv
-//       ├── dif_analysis.csv
-//       ├── person_fit.csv
-//       └── exam_summary.csv
+//
+//	exports/
+//	└── JEE-MAIN-2026-JAN/
+//	    ├── item_bank.csv
+//	    ├── response_matrix.csv
+//	    ├── classical_stats.csv
+//	    ├── candidate_scores.csv
+//	    ├── dif_analysis.csv
+//	    ├── person_fit.csv
+//	    └── exam_summary.csv
 func (e *CSVExporter) ExportAll(examCode string) ([]string, error) {
 	examDir := filepath.Join(e.outputDir, examCode)
 	os.MkdirAll(examDir, 0755)

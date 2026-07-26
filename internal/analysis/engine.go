@@ -67,10 +67,10 @@ type ClassicalItemStats struct {
 	CorrectCount        int                `json:"correct_count"`
 	IncorrectCount      int                `json:"incorrect_count"`
 	OmittedCount        int                `json:"omitted_count"`
-	PValue              float64            `json:"p_value"`               // Proportion correct
-	DiscriminationIndex float64            `json:"discrimination_index"`  // Upper-lower 27%
-	PointBiserial       float64            `json:"point_biserial"`        // Correlation with total score
-	DistractorAnalysis  map[string]float64 `json:"distractor_analysis"`   // Option → proportion selected
+	PValue              float64            `json:"p_value"`              // Proportion correct
+	DiscriminationIndex float64            `json:"discrimination_index"` // Upper-lower 27%
+	PointBiserial       float64            `json:"point_biserial"`       // Correlation with total score
+	DistractorAnalysis  map[string]float64 `json:"distractor_analysis"`  // Option → proportion selected
 	MeanTimeMs          int                `json:"mean_time_ms"`
 	FlaggedForReview    bool               `json:"flagged_for_review"`
 	FlagReasons         []string           `json:"flag_reasons,omitempty"`
@@ -328,7 +328,7 @@ func (e *Engine) RecalibrateItems(
 		}
 
 		var responses []struct {
-			theta float64
+			theta   float64
 			correct int
 		}
 
@@ -379,22 +379,22 @@ func (e *Engine) RecalibrateItems(
 
 // ExamStatistics holds aggregate statistics for an exam administration.
 type ExamStatistics struct {
-	ExamID             uuid.UUID `json:"exam_id"`
-	TotalAppeared      int       `json:"total_appeared"`
-	MeanRawScore       float64   `json:"mean_raw_score"`
-	MedianRawScore     float64   `json:"median_raw_score"`
-	StdRawScore        float64   `json:"std_raw_score"`
-	MinRawScore        float64   `json:"min_raw_score"`
-	MaxRawScore        float64   `json:"max_raw_score"`
-	SkewnessRaw        float64   `json:"skewness"`
-	KurtosisRaw        float64   `json:"kurtosis"`
-	CronbachAlpha      float64   `json:"cronbach_alpha"`
-	MarginalReliability float64  `json:"marginal_reliability"`
-	MeanTheta          float64   `json:"mean_theta"`
-	StdTheta           float64   `json:"std_theta"`
-	ScoreDistribution  []Bucket  `json:"score_distribution"`
-	PercentileTable    map[int]float64 `json:"percentile_table"`
-	ComputedAt         time.Time `json:"computed_at"`
+	ExamID              uuid.UUID       `json:"exam_id"`
+	TotalAppeared       int             `json:"total_appeared"`
+	MeanRawScore        float64         `json:"mean_raw_score"`
+	MedianRawScore      float64         `json:"median_raw_score"`
+	StdRawScore         float64         `json:"std_raw_score"`
+	MinRawScore         float64         `json:"min_raw_score"`
+	MaxRawScore         float64         `json:"max_raw_score"`
+	SkewnessRaw         float64         `json:"skewness"`
+	KurtosisRaw         float64         `json:"kurtosis"`
+	CronbachAlpha       float64         `json:"cronbach_alpha"`
+	MarginalReliability float64         `json:"marginal_reliability"`
+	MeanTheta           float64         `json:"mean_theta"`
+	StdTheta            float64         `json:"std_theta"`
+	ScoreDistribution   []Bucket        `json:"score_distribution"`
+	PercentileTable     map[int]float64 `json:"percentile_table"`
+	ComputedAt          time.Time       `json:"computed_at"`
 }
 
 // Bucket represents a score range and its frequency.

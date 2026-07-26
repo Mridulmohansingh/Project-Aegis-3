@@ -1,6 +1,8 @@
 package papergen
 
 import (
+	"fmt"
+
 	"github.com/aegis-platform/aegis/internal/domain/blueprint"
 	"github.com/aegis-platform/aegis/internal/domain/item"
 )
@@ -37,21 +39,22 @@ func BuildConstraints(bp *blueprint.Blueprint, items []*item.Item, enemies []ite
 	m.Constraints = append(m.Constraints, totalConstraint)
 
 	// 3. Chapter coverage
-	for chapterID, rules := range bp.ChapterConstraints {
+	for _, cConstraint := range bp.Constraints.Chapters {
+		chapterIDStr := cConstraint.ChapterID.String()
 		minConstraint := Constraint{
-			Name:   "chapter_min_" + chapterID,
+			Name:   "chapter_min_" + chapterIDStr,
 			Type:   GEQ,
-			RHS:    float64(rules.Min),
+			RHS:    float64(cConstraint.MinItems),
 			Coeffs: make(map[int]float64),
 		}
 		maxConstraint := Constraint{
-			Name:   "chapter_max_" + chapterID,
+			Name:   "chapter_max_" + chapterIDStr,
 			Type:   LEQ,
-			RHS:    float64(rules.Max),
+			RHS:    float64(cConstraint.MaxItems),
 			Coeffs: make(map[int]float64),
 		}
 		for i, itm := range items {
-			if itm.ChapterID == chapterID {
+			if itm.ChapterID == cConstraint.ChapterID {
 				minConstraint.Coeffs[i] = 1.0
 				maxConstraint.Coeffs[i] = 1.0
 			}
@@ -60,56 +63,44 @@ func BuildConstraints(bp *blueprint.Blueprint, items []*item.Item, enemies []ite
 	}
 
 	// 4. Difficulty distribution
-	for diffLevel, rules := range bp.DifficultyConstraints {
-		minConstraint := Constraint{
-			Name:   "difficulty_min_" + diffLevel,
-			Type:   GEQ,
-			RHS:    float64(rules.Min),
-			Coeffs: make(map[int]float64),
-		}
-		maxConstraint := Constraint{
-			Name:   "difficulty_max_" + diffLevel,
-			Type:   LEQ,
-			RHS:    float64(rules.Max),
+	diffTargets := bp.Constraints.Difficulty.Distribution.TargetCounts(bp.TotalItems)
+	for levelStr, targetCount := range diffTargets {
+		diffConstraint := Constraint{
+			Name:   "difficulty_" + levelStr,
+			Type:   EQ,
+			RHS:    float64(targetCount),
 			Coeffs: make(map[int]float64),
 		}
 		for i, itm := range items {
-			if itm.DifficultyLevel == diffLevel {
-				minConstraint.Coeffs[i] = 1.0
-				maxConstraint.Coeffs[i] = 1.0
+			if string(itm.DifficultyLevel) == levelStr {
+				diffConstraint.Coeffs[i] = 1.0
 			}
 		}
-		m.Constraints = append(m.Constraints, minConstraint, maxConstraint)
+		m.Constraints = append(m.Constraints, diffConstraint)
 	}
 
-	// 5. Cognitive levels
-	for cogLevel, rules := range bp.CognitiveConstraints {
-		minConstraint := Constraint{
-			Name:   "cognitive_min_" + cogLevel,
-			Type:   GEQ,
-			RHS:    float64(rules.Min),
-			Coeffs: make(map[int]float64),
-		}
-		maxConstraint := Constraint{
-			Name:   "cognitive_max_" + cogLevel,
-			Type:   LEQ,
-			RHS:    float64(rules.Max),
+	// 5. Cognitive levels distribution
+	cogTargets := bp.Constraints.CognitiveLevels.TargetCounts(bp.TotalItems)
+	for levelStr, targetCount := range cogTargets {
+		cogConstraint := Constraint{
+			Name:   "cognitive_" + levelStr,
+			Type:   EQ,
+			RHS:    float64(targetCount),
 			Coeffs: make(map[int]float64),
 		}
 		for i, itm := range items {
-			if itm.CognitiveLevel == cogLevel {
-				minConstraint.Coeffs[i] = 1.0
-				maxConstraint.Coeffs[i] = 1.0
+			if string(itm.CognitiveLevel) == levelStr {
+				cogConstraint.Coeffs[i] = 1.0
 			}
 		}
-		m.Constraints = append(m.Constraints, minConstraint, maxConstraint)
+		m.Constraints = append(m.Constraints, cogConstraint)
 	}
 
 	// 6. Time budget: Σ(x_i * t_i) ≤ T_max
 	timeConstraint := Constraint{
 		Name:   "time_budget",
 		Type:   LEQ,
-		RHS:    float64(bp.MaxTimeSecs),
+		RHS:    float64(bp.Constraints.TimeBudgetSecs),
 		Coeffs: make(map[int]float64),
 	}
 	for i, itm := range items {
@@ -120,13 +111,13 @@ func BuildConstraints(bp *blueprint.Blueprint, items []*item.Item, enemies []ite
 	// 7. Enemy items: x_a + x_b ≤ 1 for each enemy pair
 	for idx, enemy := range enemies {
 		enemyConstraint := Constraint{
-			Name:   "enemy_" + string(rune(idx)), // simplistic naming
+			Name:   fmt.Sprintf("enemy_%d", idx),
 			Type:   LEQ,
 			RHS:    1.0,
 			Coeffs: make(map[int]float64),
 		}
 		for i, itm := range items {
-			if itm.ID == enemy.ItemID1 || itm.ID == enemy.ItemID2 {
+			if itm.ID == enemy.ItemAID || itm.ID == enemy.ItemBID {
 				enemyConstraint.Coeffs[i] = 1.0
 			}
 		}
@@ -135,14 +126,10 @@ func BuildConstraints(bp *blueprint.Blueprint, items []*item.Item, enemies []ite
 
 	// 8. Exposure control (force x_i = 0 for over-exposed items by altering upper bound)
 	for i, itm := range items {
-		if itm.ExposureRate > bp.MaxExposureRate {
+		if itm.Exposure.ExposureIndex > bp.Constraints.MaxExposureIndex {
 			m.Variables[i].Upper = 0.0 // Pre-solve fixing
 		}
 	}
-
-	// 9. Answer key balance (simplistic approach: A, B, C, D roughly equal)
-	// Usually items have a fixed correct option, but let's assume we map constraints
-	// Here we skip strict answer key balance for brevity in this snippet.
 
 	return m
 }

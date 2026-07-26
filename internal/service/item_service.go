@@ -439,9 +439,9 @@ func (s *ItemService) CalibrateItem(ctx context.Context, orgID, itemID uuid.UUID
 	s.recordVersion(ctx, existing.ID, existing.Version, item.ChangeTypeIRTUpdate, nil, newData, req.PsychometricianID, "IRT calibration")
 
 	s.publishAudit(ctx, "ITEM_CALIBRATED", req.PsychometricianID, "item", itemID, orgID, "CALIBRATE", map[string]interface{}{
-		"irt_a": req.Params.A,
-		"irt_b": req.Params.B,
-		"irt_c": req.Params.C,
+		"irt_a":       req.Params.A,
+		"irt_b":       req.Params.B,
+		"irt_c":       req.Params.C,
 		"sample_size": req.Params.CalibrationSampleSize,
 	})
 

@@ -233,8 +233,8 @@ func (s *Service) CheckRateLimit(ctx context.Context, key string, maxRequests in
 // InMemoryClient implements RedisClient using an in-memory map.
 // FOR DEVELOPMENT AND TESTING ONLY.
 type InMemoryClient struct {
-	data    map[string]string
-	expires map[string]time.Time
+	data     map[string]string
+	expires  map[string]time.Time
 	counters map[string]int64
 }
 
