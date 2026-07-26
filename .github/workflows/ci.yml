@@ -7,7 +7,40 @@ on:
     branches: [ "main" ]
 
 jobs:
-  test:
+  format-lint-vet:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: '1.22'
+        cache: true
+
+    - name: Check Go Format (gofmt)
+      run: |
+        if [ -n "$(gofmt -l .)" ]; then
+          echo "Go code is not formatted. Run gofmt -w ."
+          gofmt -d .
+          exit 1
+        fi
+
+    - name: Go Vet
+      run: go vet ./...
+
+    - name: Run golangci-lint
+      uses: golangci/golangci-lint-action@v3
+      with:
+        version: latest
+        args: --timeout=5m
+
+    - name: Run govulncheck
+      uses: golang/govulncheck-action@v1
+      with:
+        go-version: '1.22'
+
+  test-build:
     runs-on: ubuntu-latest
     services:
       postgres:
@@ -30,27 +63,35 @@ jobs:
     - name: Set up Go
       uses: actions/setup-go@v4
       with:
-        go-version: '1.21'
+        go-version: '1.22'
         cache: true
 
-    - name: Run golangci-lint
-      uses: golangci/golangci-lint-action@v3
-      with:
-        version: latest
-        args: --timeout=5m
-
-    - name: Test
+    - name: Run Tests
       run: go test -v -coverprofile=coverage.out ./...
       env:
         DATABASE_URL: postgres://testuser:testpassword@localhost:5432/testdb?sslmode=disable
 
-    - name: Build
+    - name: Build All Binaries
       run: go build -v ./...
 
-    - name: Upload coverage reports
-      uses: codecov/codecov-action@v3
+  terraform-validate:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: HashiCorp - Setup Terraform
+      uses: hashicorp/setup-terraform@v2
       with:
-        file: ./coverage.out
+        terraform_version: 1.5.0
+
+    - name: Terraform Format check
+      run: terraform fmt -check -recursive terraform/
+
+    - name: Terraform Init & Validate
+      run: |
+        cd terraform
+        terraform init -backend=false
+        terraform validate
 
   security:
     runs-on: ubuntu-latest
@@ -66,7 +107,7 @@ jobs:
         severity: 'CRITICAL,HIGH'
 
   build-push:
-    needs: [test, security]
+    needs: [format-lint-vet, test-build, terraform-validate, security]
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     permissions:
@@ -91,14 +132,5 @@ jobs:
         ECR_REPOSITORY: aegis/question-bank
         IMAGE_TAG: ${{ github.sha }}
       run: |
-        docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG -f build/package/question-bank/Dockerfile .
-        docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
-
-    - name: Build, tag, and push image to Amazon ECR (Exam Delivery)
-      env:
-        ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-        ECR_REPOSITORY: aegis/exam-delivery
-        IMAGE_TAG: ${{ github.sha }}
-      run: |
-        docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG -f build/package/exam-delivery/Dockerfile .
+        docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG -f Dockerfile .
         docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG

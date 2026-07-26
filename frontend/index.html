@@ -8,93 +8,9 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <!-- ── Sidebar ──────────────────────────── -->
-    <aside class="sidebar" id="sidebar">
-        <div class="sidebar-header">
-            <div class="logo">
-                <div class="logo-icon">Æ</div>
-                <div class="logo-text">
-                    <span class="logo-name">AEGIS</span>
-                    <span class="logo-sub">NDAP v1.0</span>
-                </div>
-            </div>
-        </div>
-        <nav class="sidebar-nav">
-            <div class="nav-section-label">Overview</div>
-            <a href="#" class="nav-item active" data-page="dashboard" onclick="navigateTo('dashboard')">
-                <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
-                Dashboard
-            </a>
-            <div class="nav-section-label">Question Bank</div>
-            <a href="#" class="nav-item" data-page="items" onclick="navigateTo('items')">
-                <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>
-                Items
-            </a>
-            <a href="#" class="nav-item" data-page="blueprints" onclick="navigateTo('blueprints')">
-                <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
-                Blueprints
-            </a>
-            <div class="nav-section-label">Examinations</div>
-            <a href="#" class="nav-item" data-page="exams" onclick="navigateTo('exams')">
-                <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-                Exams
-            </a>
-            <a href="#" class="nav-item" data-page="papers" onclick="navigateTo('papers')">
-                <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
-                Papers
-            </a>
-            <div class="nav-section-label">Analytics</div>
-            <a href="#" class="nav-item" data-page="analytics" onclick="navigateTo('analytics')">
-                <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
-                IRT Analytics
-            </a>
-            <a href="#" class="nav-item" data-page="audit" onclick="navigateTo('audit')">
-                <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-                Audit Log
-            </a>
-        </nav>
-        <div class="sidebar-footer">
-            <div class="user-info">
-                <div class="user-avatar">MS</div>
-                <div class="user-details">
-                    <span class="user-name">Mridul Singh</span>
-                    <span class="user-role">Super Admin</span>
-                </div>
-            </div>
-        </div>
-    </aside>
-
-    <!-- ── Main Content ─────────────────────── -->
-    <main class="main-content" id="main-content">
-        <!-- Header Bar -->
-        <header class="top-bar">
-            <div class="top-bar-left">
-                <button class="menu-toggle" onclick="toggleSidebar()">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
-                </button>
-                <h1 class="page-title" id="page-title">Dashboard</h1>
-            </div>
-            <div class="top-bar-right">
-                <div class="search-box">
-                    <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-                    <input type="text" placeholder="Search items, exams..." id="global-search">
-                </div>
-                <button class="icon-btn notification-btn">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
-                    <span class="notification-badge">3</span>
-                </button>
-            </div>
-        </header>
-
-        <!-- Dynamic Page Content -->
-        <div class="page-content" id="page-content">
-            <!-- Dashboard page loads by default -->
-        </div>
-    </main>
-
-    <script src="app.js"></script>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
 </body>
 </html>

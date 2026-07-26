@@ -29,7 +29,6 @@ config.local.yaml
 
 # Go
 vendor/
-go.sum
 
 # Docker
 docker-compose.override.yml

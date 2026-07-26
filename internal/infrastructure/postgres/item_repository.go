@@ -1,8 +1,4 @@
-// Package repository provides the PostgreSQL implementation of the Item repository.
-//
-// It uses pgx/v5 for high-performance database access with prepared statements,
-// cursor-based pagination, optimistic locking, and multi-tenant isolation.
-package repository
+package postgres
 
 import (
 	"context"
