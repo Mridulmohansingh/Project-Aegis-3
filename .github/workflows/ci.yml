@@ -107,9 +107,22 @@ jobs:
         format: 'table'
         severity: 'CRITICAL,HIGH'
 
+  check-secrets:
+    runs-on: ubuntu-latest
+    outputs:
+      has-aws: ${{ steps.check.outputs.has-aws }}
+    steps:
+    - id: check
+      run: |
+        if [ -n "${{ secrets.AWS_ROLE_TO_ASSUME }}" ]; then
+          echo "has-aws=true" >> "$GITHUB_OUTPUT"
+        else
+          echo "has-aws=false" >> "$GITHUB_OUTPUT"
+        fi
+
   build-push:
-    needs: [format-lint-vet, test-build, terraform-validate, security]
-    if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' && secrets.AWS_ROLE_TO_ASSUME }}
+    needs: [format-lint-vet, test-build, terraform-validate, security, check-secrets]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && needs.check-secrets.outputs.has-aws == 'true'
     runs-on: ubuntu-latest
     permissions:
       id-token: write
