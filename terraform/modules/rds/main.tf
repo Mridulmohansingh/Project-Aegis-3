@@ -58,21 +58,21 @@ resource "aws_db_instance" "rds" {
   db_name                     = var.db_name
   username                    = "postgresadmin"
   manage_master_user_password = true
-  
+
   db_subnet_group_name   = aws_db_subnet_group.rds.name
   vpc_security_group_ids = [aws_security_group.rds.id]
   parameter_group_name   = aws_db_parameter_group.rds.name
 
   multi_az = true
-  
+
   backup_retention_period = 35
   backup_window           = "03:00-04:00"
   maintenance_window      = "Sun:04:00-Sun:05:00"
-  
+
   performance_insights_enabled    = true
   performance_insights_kms_key_id = aws_kms_key.rds_key.arn
 
-  skip_final_snapshot = false
+  skip_final_snapshot       = false
   final_snapshot_identifier = "aegis-${var.environment}-db-final-snapshot"
 }
 

@@ -33,8 +33,7 @@ import (
 )
 
 func main() {
-	// Seed random generator
-	rand.Seed(1337)
+	// Setup logger
 
 	logger, _ := zap.NewDevelopment()
 	defer logger.Sync()

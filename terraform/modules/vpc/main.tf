@@ -24,7 +24,7 @@ resource "aws_subnet" "public" {
   map_public_ip_on_launch = true
 
   tags = {
-    Name = "aegis-${var.environment}-public-subnet-${count.index + 1}"
+    Name                     = "aegis-${var.environment}-public-subnet-${count.index + 1}"
     "kubernetes.io/role/elb" = "1"
   }
 }
@@ -36,7 +36,7 @@ resource "aws_subnet" "private" {
   availability_zone = var.availability_zones[count.index]
 
   tags = {
-    Name = "aegis-${var.environment}-private-subnet-${count.index + 1}"
+    Name                              = "aegis-${var.environment}-private-subnet-${count.index + 1}"
     "kubernetes.io/role/internal-elb" = "1"
   }
 }
@@ -139,7 +139,7 @@ resource "aws_iam_role_policy" "vpc_flow_log_policy" {
           "logs:DescribeLogGroups",
           "logs:DescribeLogStreams"
         ]
-        Effect = "Allow"
+        Effect   = "Allow"
         Resource = "*"
       }
     ]
