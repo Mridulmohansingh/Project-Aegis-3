@@ -7,7 +7,7 @@ on:
 
 jobs:
   deploy:
-    if: secrets.AWS_ROLE_TO_ASSUME != ''
+    if: ${{ secrets.AWS_ROLE_TO_ASSUME != '' }}
     runs-on: ubuntu-latest
     permissions:
       id-token: write
