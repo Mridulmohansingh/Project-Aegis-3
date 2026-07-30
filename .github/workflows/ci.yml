@@ -109,7 +109,7 @@ jobs:
 
   build-push:
     needs: [format-lint-vet, test-build, terraform-validate, security]
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && secrets.AWS_ROLE_TO_ASSUME != ''
     runs-on: ubuntu-latest
     permissions:
       id-token: write
@@ -120,7 +120,7 @@ jobs:
     - name: Configure AWS credentials
       uses: aws-actions/configure-aws-credentials@v4
       with:
-        role-to-assume: arn:aws:iam::123456789012:role/github-actions-role
+        role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
         aws-region: us-east-1
 
     - name: Login to Amazon ECR
