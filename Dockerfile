@@ -5,7 +5,7 @@
 # No shell, no package manager — defense in depth.
 
 # ── Stage 1: Build ────────────────────────────
-FROM golang:1.22-alpine AS builder
+FROM golang:1.25-alpine AS builder
 
 ARG SERVICE_NAME=question-bank
 ARG VERSION=dev
