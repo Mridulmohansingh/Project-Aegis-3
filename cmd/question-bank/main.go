@@ -23,8 +23,11 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/aegis-platform/aegis/internal/api/handler"
+	"github.com/aegis-platform/aegis/internal/audit"
 	"github.com/aegis-platform/aegis/internal/infrastructure/postgres"
+	"github.com/aegis-platform/aegis/internal/service"
 	"github.com/aegis-platform/aegis/pkg/config"
+	"github.com/aegis-platform/aegis/pkg/crypto"
 	"github.com/aegis-platform/aegis/pkg/logging"
 	"github.com/aegis-platform/aegis/pkg/middleware"
 )
@@ -34,6 +37,19 @@ var (
 	buildTime = "unknown"
 	commit    = "unknown"
 )
+
+type auditSignerAdapter struct {
+	signingSvc *crypto.SigningService
+	keyID      string
+}
+
+func (a *auditSignerAdapter) Sign(data []byte) ([]byte, error) {
+	return a.signingSvc.Sign(data, a.keyID)
+}
+
+func (a *auditSignerAdapter) Verify(data, signature []byte) (bool, error) {
+	return a.signingSvc.Verify(data, signature, a.keyID)
+}
 
 func main() {
 	configPath := flag.String("config", "", "Path to configuration file")
@@ -75,8 +91,25 @@ func main() {
 	// Initialize repositories
 	itemRepo := postgres.NewItemRepository(dbPool, logger)
 
-	// Initialize services (placeholder — would include full DI)
-	_ = itemRepo // Will be injected into service layer
+	// Initialize persistent key manager and crypto services
+	keyDir := "./.aegis_keys"
+	keyManager, err := crypto.NewPersistentFileKeyManager(keyDir)
+	if err != nil {
+		logger.Fatal("failed to initialize persistent key manager", zap.Error(err))
+	}
+
+	encryptSvc := crypto.NewEncryptionService(keyManager)
+	signingSvc := crypto.NewSigningService(keyManager)
+	auditRepo := audit.NewMemoryRepository()
+	auditSigner := &auditSignerAdapter{signingSvc: signingSvc, keyID: "question-bank-audit"}
+	auditSvc, err := audit.NewService(auditRepo, auditSigner, logger)
+	if err != nil {
+		logger.Fatal("failed to initialize audit service", zap.Error(err))
+	}
+
+	// Initialize item business service and adapter
+	itemSvc := service.NewItemService(itemRepo, auditSvc, signingSvc, encryptSvc, logger)
+	itemAdapter := handler.NewItemServiceAdapter(itemSvc)
 
 	// Build HTTP router
 	mux := http.NewServeMux()
@@ -100,7 +133,7 @@ func main() {
 	})
 
 	// Register API routes
-	itemHandler := handler.NewItemHandler(nil, logger) // Service would be injected
+	itemHandler := handler.NewItemHandler(itemAdapter, logger)
 	itemHandler.RegisterRoutes(mux)
 
 	// Build middleware chain

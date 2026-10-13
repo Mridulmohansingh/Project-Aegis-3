@@ -112,6 +112,20 @@ graph TB
 | Linter Integration | `.golangci.yml` | Created custom linter configs to suppress pedantic sync warnings and force 1.25 validation rules |
 | CI/CD Pipelines | `ci.yml`, `cd.yml` | Upgraded toolchains to Go 1.25, used `goinstall` mode for linter, and introduced `check-secrets` helper job to skip AWS steps dynamically |
 
+### Phase 8: Cryptographic Anti-Leak Core & Custody Hardening (Commit 8)
+| Component | Files | Purpose |
+|---|---|---|
+| Threshold Custody (A1) | `pkg/crypto/threshold/shamir.go` | Shamir's Secret Sharing ($k$-of-$n$) over $\text{GF}(2^8)$ Rijndael field; eliminates single-admin leak path |
+| Time-Locked Release (A2, A9) | `pkg/crypto/threshold/timelock.go` | Cryptographically blocks paper decryption before scheduled exam start time $T$ |
+| Full Content Encryption (A3) | `pkg/crypto/threshold/timelock.go` | Encrypts full question text, options, and media per paper under AES-256-GCM |
+| Question Delivery API (A4) | `internal/delivery/delivery_questions.go` | Serves active exam questions with answer keys and solutions strictly redacted |
+| Watermarking & Forensics (A6) | `internal/delivery/delivery_questions.go` | Embeds candidate & session steganographic watermark into delivered question stems |
+| Candidate Auth Middleware (A7, R7) | `pkg/middleware/auth.go` | Bearer token validation and RBAC role-checking middleware |
+| Persistent Key Custody (R1, R2) | `pkg/crypto/persistent_km.go` | Key manager storing master KEK and Ed25519 signing keys with 0600 permissions |
+| Schedule & Integrity Enforcement (R3, R4) | `internal/delivery/service.go` | Enforces exam start time window and preserves candidate digital signatures alongside server HMAC |
+| Real Dependency Wiring (R6) | `internal/api/handler/adapter.go`, `main.go` | Wires real persistent crypto, audit, repository, and service into API handlers (no more nil panics) |
+| Threat Model (C4) | `docs/security/threat_model.md` | Formal threat actor taxonomy, STRIDE breakdown, and mathematical proof mapping |
+
 ## Key Technical Highlights
 
 ### IRT 3PL Curve (rendered live in browser)

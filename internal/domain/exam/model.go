@@ -283,6 +283,7 @@ type Response struct {
 	ClientTimestamp time.Time `json:"client_timestamp" db:"client_timestamp"`
 	ServerTimestamp time.Time `json:"server_timestamp" db:"server_timestamp"`
 	ClientHash      []byte    `json:"-" db:"client_hash"`
+	ServerHash      []byte    `json:"-" db:"server_hash"`
 	SequenceNumber  int64     `json:"sequence_number" db:"sequence_number"`
 }
 

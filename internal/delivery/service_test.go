@@ -8,12 +8,15 @@ import (
 	"sync"
 	"testing"
 
+	"time"
+
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap"
 
 	"github.com/aegis-platform/aegis/internal/delivery"
 	"github.com/aegis-platform/aegis/internal/domain/exam"
+	"github.com/aegis-platform/aegis/internal/domain/item"
 	"github.com/aegis-platform/aegis/pkg/crypto"
 )
 
@@ -250,3 +253,99 @@ func TestStartAndSubmitAnswer(t *testing.T) {
 	// Check saved responses
 	assert.Equal(t, 1, len(respRepo.responses))
 }
+
+func TestStartSessionEnforcesReleaseTimeT(t *testing.T) {
+	svc, examRepo, _, _ := setupDeliveryService(t)
+
+	examID := uuid.New()
+	candID := uuid.New()
+	paperID := uuid.New()
+
+	// Exam scheduled for future (1 hour from now)
+	futureStart := time.Now().UTC().Add(1 * time.Hour)
+	examRepo.exams[examID] = &exam.Exam{
+		ID:              examID,
+		Status:          exam.ExamStatusActive,
+		DurationMinutes: 120,
+		Scheduling: exam.Scheduling{
+			Windows: []exam.ExamWindow{
+				{StartTime: futureStart, EndTime: futureStart.Add(2 * time.Hour)},
+			},
+		},
+	}
+
+	session, err := svc.InitializeSession(context.Background(), delivery.InitializeSessionRequest{
+		ExamID:      examID,
+		CandidateID: candID,
+		PaperID:     paperID,
+	})
+	assert.NoError(t, err)
+
+	// Attempt to start before scheduled release time T
+	err = svc.StartSession(context.Background(), session.ID, 120)
+	assert.Error(t, err, "Starting session before ScheduledStart must be rejected")
+}
+
+func TestGetQuestionsDeliversRedactedAndWatermarkedQuestions(t *testing.T) {
+	svc, examRepo, _, _ := setupDeliveryService(t)
+
+	examID := uuid.New()
+	candID := uuid.New()
+	paperID := uuid.New()
+	itemID := uuid.New()
+
+	examRepo.exams[examID] = &exam.Exam{
+		ID:              examID,
+		Status:          exam.ExamStatusActive,
+		DurationMinutes: 120,
+	}
+
+	session, err := svc.InitializeSession(context.Background(), delivery.InitializeSessionRequest{
+		ExamID:      examID,
+		CandidateID: candID,
+		PaperID:     paperID,
+	})
+	assert.NoError(t, err)
+
+	// Questions requested before StartSession must fail
+	_, err = svc.GetQuestions(context.Background(), session.ID, nil)
+	assert.Error(t, err, "GetQuestions must fail when session is not IN_PROGRESS")
+
+	// Start session
+	err = svc.StartSession(context.Background(), session.ID, 120)
+	assert.NoError(t, err)
+
+	// Prepare mock item with confidential answer key and solution
+	items := []item.Item{
+		{
+			ID:   itemID,
+			Type: item.ItemTypeMCQSingle,
+			Content: item.ItemContent{
+				Stem: "What is the speed of light in vacuum?",
+				Options: []item.Option{
+					{Label: "A", Content: "3 x 10^8 m/s"},
+					{Label: "B", Content: "3 x 10^6 m/s"},
+				},
+			},
+			AnswerKey: []byte("SECRET_ANSWER_KEY"),
+			Solution:  []byte("SECRET_DETAILED_SOLUTION"),
+			MarkingScheme: item.MarkingScheme{
+				CorrectMarks:   4,
+				IncorrectMarks: -1,
+			},
+		},
+	}
+
+	// Fetch delivered questions
+	delivered, err := svc.GetQuestions(context.Background(), session.ID, items)
+	assert.NoError(t, err)
+	assert.NotNil(t, delivered)
+	assert.Len(t, delivered.Questions, 1)
+
+	q := delivered.Questions[0]
+	assert.Equal(t, itemID, q.ItemID)
+	assert.Contains(t, q.Stem, "What is the speed of light in vacuum?")
+	assert.Contains(t, q.Stem, candID.String()[:8], "Delivered question stem must contain candidate watermark")
+	assert.NotEmpty(t, q.Watermark)
+}
+

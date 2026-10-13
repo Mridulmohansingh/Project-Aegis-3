@@ -129,6 +129,11 @@ func (s *Service) InitializeSession(ctx context.Context, req InitializeSessionRe
 		return nil, apperrors.NewInternal("failed to generate HMAC key", err)
 	}
 
+	scheduledStart := time.Now().UTC()
+	if len(examEntity.Scheduling.Windows) > 0 && !examEntity.Scheduling.Windows[0].StartTime.IsZero() {
+		scheduledStart = examEntity.Scheduling.Windows[0].StartTime.UTC()
+	}
+
 	session := &exam.ExamSession{
 		ID:               uuid.New(),
 		ExamID:           req.ExamID,
@@ -136,7 +141,7 @@ func (s *Service) InitializeSession(ctx context.Context, req InitializeSessionRe
 		PaperID:          req.PaperID,
 		CenterID:         req.CenterID,
 		Status:           exam.SessionAuthenticated,
-		ScheduledStart:   time.Now().UTC(),
+		ScheduledStart:   scheduledStart,
 		RemainingSecs:    examEntity.DurationMinutes * 60,
 		ClientIP:         req.ClientIP,
 		UserAgent:        req.UserAgent,
@@ -182,6 +187,13 @@ func (s *Service) StartSession(ctx context.Context, sessionID uuid.UUID, duratio
 
 	active.mu.Lock()
 	defer active.mu.Unlock()
+
+	// Enforce scheduled release time T
+	now := time.Now().UTC()
+	if now.Before(active.session.ScheduledStart.UTC()) {
+		return apperrors.NewForbidden(fmt.Sprintf("cannot start exam before scheduled release time %s (current: %s)",
+			active.session.ScheduledStart.Format(time.RFC3339), now.Format(time.RFC3339)))
+	}
 
 	if err := active.session.Start(durationMinutes); err != nil {
 		return err
@@ -255,6 +267,13 @@ func (s *Service) SubmitAnswer(ctx context.Context, req SubmitAnswerRequest) err
 	now := time.Now().UTC()
 	itemKey := req.ItemID.String()
 
+	var clientHashBytes []byte
+	if req.ClientHash != "" {
+		clientHashBytes = []byte(req.ClientHash)
+	} else {
+		clientHashBytes = serverHash
+	}
+
 	// Upsert response (last-write-wins for the same item)
 	response, exists := active.responses[itemKey]
 	if exists {
@@ -268,7 +287,8 @@ func (s *Service) SubmitAnswer(ctx context.Context, req SubmitAnswerRequest) err
 		response.ResponseChanges++
 		response.ClientTimestamp = req.ClientTimestamp
 		response.ServerTimestamp = now
-		response.ClientHash = serverHash
+		response.ClientHash = clientHashBytes
+		response.ServerHash = serverHash
 		response.SequenceNumber = seqNum
 		response.VisitCount++
 	} else {
@@ -294,7 +314,8 @@ func (s *Service) SubmitAnswer(ctx context.Context, req SubmitAnswerRequest) err
 			ResponseChanges: 0,
 			ClientTimestamp: req.ClientTimestamp,
 			ServerTimestamp: now,
-			ClientHash:      serverHash,
+			ClientHash:      clientHashBytes,
+			ServerHash:      serverHash,
 			SequenceNumber:  seqNum,
 		}
 		active.responses[itemKey] = response

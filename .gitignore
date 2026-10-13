@@ -25,6 +25,7 @@ Thumbs.db
 .env.*
 *.pem
 *.key
+.aegis_keys/
 config.local.yaml
 
 # Go
